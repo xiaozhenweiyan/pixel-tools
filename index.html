@@ -20,7 +20,10 @@
         <h2>输入数字序列</h2>
         <textarea id="input-series" class="pixel-input" rows="4" placeholder="输入数字，用空格/逗号/换行分隔，如：1, 2, 3, 5, 8, 13"></textarea>
         <div class="button-row">
-          <button id="btn-predict" class="pixel-btn">预测</button>
+          <div class="predict-count-wrap">
+            <button id="btn-predict" class="pixel-btn">预测</button>
+            <input type="number" id="predict-count" class="pixel-input predict-count-input" value="1" min="1" max="50" title="预测数量">
+          </div>
           <button id="btn-reset" class="pixel-btn">重置</button>
           <button id="btn-export-json" class="pixel-btn">导出 JSON</button>
           <button id="btn-export-csv" class="pixel-btn">导出 CSV</button>
@@ -42,6 +45,15 @@
       <div class="pixel-panel result-panel">
         <h2>融合预测结果</h2>
         <div id="ensemble-result" class="ensemble-display">— 等待输入 —</div>
+      </div>
+
+      <!-- Neural Network Panel -->
+      <div class="pixel-panel nn-panel">
+        <h2>神经网络预测</h2>
+        <div class="nn-canvas-wrap">
+          <canvas id="nn-canvas"></canvas>
+        </div>
+        <div class="nn-result" id="nn-result">— 等待输入 —</div>
       </div>
     </section>
 
@@ -74,6 +86,17 @@
         <button class="pixel-btn pixel-zoom-btn" id="btn-zoom-out">−</button>
       </div>
     </div>
+    <div class="pixel-panel function-fit-panel" id="function-fit-panel" style="display:none;">
+      <h2>拟合函数</h2>
+      <div class="function-fit-content" id="function-fit-content">
+        <div class="fit-formula" id="fit-formula">f(x) = —</div>
+        <div class="fit-info">
+          <span id="fit-domain">定义域: —</span>
+          <span id="fit-range">值域: —</span>
+          <span id="fit-r2">R²: —</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <footer class="pixel-panel" style="text-align:center; margin:20px;">
@@ -85,6 +108,8 @@
   <!-- Scripts loaded at end of body, in this exact order -->
   <script src="js/predictors.js"></script>
   <script src="js/weights.js"></script>
+  <script src="js/nn.js"></script>
+  <script src="js/funcfit.js"></script>
   <script src="js/chart.js"></script>
   <script src="js/app.js"></script>
 </body>

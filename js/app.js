@@ -42,7 +42,10 @@
     stats: [],                // 方法统计列表（来自 computeMethodStats）
     weightMode: 'backtest',   // 'backtest' | 'uniform'
     weights: [],              // 当前权重 number[]（和为 1）
-    ensemble: null            // 当前融合预测 number|null
+    ensemble: null,           // 当前融合预测（单值，兼容旧代码） number|null
+    ensemblePredictions: [],  // 融合预测数组（多步） number[]
+    nnPredictions: [],        // 神经网络预测值数组（多步） number[]
+    fitCurve: null            // 拟合曲线 { evaluate, degree, formula, domain, range, r2 } | null
   };
 
   // 训练动画状态 / training animation state
@@ -131,6 +134,106 @@
       return uniformWeights(predictors, state.series);
     }
     return computeWeights(predictors, state.series); // 默认 backtest
+  }
+
+  // ============================================================
+  // Part 2.5: 多步预测 + 神经网络融合 / Multi-step + NN Ensemble
+  // ============================================================
+
+  /**
+   * getPredictCount() → number
+   * 读取预测数量输入框，默认为 1，范围 1..50。
+   */
+  function getPredictCount() {
+    const input = document.getElementById('predict-count');
+    if (!input) return 1;
+    let n = parseInt(input.value, 10);
+    if (isNaN(n) || n < 1) n = 1;
+    if (n > 50) n = 50;
+    return n;
+  }
+
+  /**
+   * computeMultiStepPredictions(series, steps, weights) → { mathPreds: number[], ensemble: number[] }
+   *
+   * 用各数学方法迭代预测 steps 步：每一步基于当前序列+之前的预测值预测下一步，
+   * 然后用权重融合得到该步的融合值，再把融合值加入序列用于下一步预测。
+   * 返回 mathPreds：各方法对第一步的预测值数组（用于方法列表展示）；
+   * ensemble：每一步的融合预测值数组（长度 steps）。
+   */
+  function computeMultiStepPredictions(series, steps, weights) {
+    const mathPreds = [];
+    const ensemble = [];
+    const workingSeries = series.slice();
+
+    for (let s = 0; s < steps; s++) {
+      const preds = predictors.map(function (p) {
+        try { return p.predict(workingSeries); }
+        catch (e) { return null; }
+      });
+      const ensVal = ensemblePredict(preds, weights);
+      ensemble.push(ensVal);
+      if (s === 0) {
+        // 第一步各方法预测用于方法列表展示
+        for (let i = 0; i < predictors.length; i++) {
+          mathPreds.push({
+            id: predictors[i].id,
+            name: predictors[i].name,
+            category: predictors[i].category,
+            prediction: preds[i],
+            mape: computeSingleMape(predictors[i], workingSeries)
+          });
+        }
+      }
+      // 用融合值扩展序列用于下一步
+      workingSeries.push(ensVal);
+    }
+
+    return { mathPreds: mathPreds, ensemble: ensemble };
+  }
+
+  /**
+   * computeSingleMape(predictor, series) → number
+   * 计算单个预测器在给定序列上的 MAPE（简化版，和 backtest 一致）。
+   */
+  function computeSingleMape(predictor, series) {
+    if (!series || series.length < 3) return Infinity;
+    let totalAPE = 0, count = 0;
+    for (let i = 2; i < series.length; i++) {
+      const hist = series.slice(0, i);
+      const pred = predictor.predict(hist);
+      const actual = series[i];
+      if (pred === null || pred === undefined || !isFinite(pred)) continue;
+      if (actual === 0) continue;
+      totalAPE += Math.abs((pred - actual) / actual);
+      count++;
+    }
+    if (count === 0) return Infinity;
+    return totalAPE / count;
+  }
+
+  /**
+   * integrateNNIntoEnsemble(mathEnsemble, nnPreds) → number[]
+   * 将神经网络预测与数学方法融合预测再做一次简单加权融合。
+   * NN 权重 0.3，数学融合权重 0.7（启发式）。
+   */
+  function integrateNNIntoEnsemble(mathEnsemble, nnPreds) {
+    const result = [];
+    const wMath = 0.7;
+    const wNN = 0.3;
+    const len = Math.max(mathEnsemble.length, nnPreds.length);
+    for (let i = 0; i < len; i++) {
+      const mVal = i < mathEnsemble.length ? mathEnsemble[i] : null;
+      const nVal = i < nnPreds.length ? nnPreds[i] : null;
+      if (mVal === null || mVal === undefined || !isFinite(mVal)) {
+        result.push(nVal);
+      } else if (nVal === null || nVal === undefined || !isFinite(nVal)) {
+        result.push(mVal);
+      } else {
+        result.push(mVal * wMath + nVal * wNN);
+      }
+    }
+    return result;
   }
 
   // ============================================================
@@ -241,7 +344,10 @@
     state.weights = initialWeights;
     state.stats = computeMethodStats(predictors, series);
     state.ensemble = null;  // 训练期间尚无最终预测 / no final prediction yet
-    if (lineCanvas) drawLineChart(lineCanvas, series, null, state.stats);
+    state.ensemblePredictions = [];
+    state.nnPredictions = [];
+    state.fitCurve = null;
+    if (lineCanvas) drawLineChart(lineCanvas, series, [], state.stats, null);
     if (weightCanvas) drawWeightBars(weightCanvas, state.stats, initialWeights);
 
     // 5. 逐步播放训练动画 / run each training step with animation
@@ -309,12 +415,51 @@
     await sleep(300);
     if (!trainingInProgress) return;  // 被取消 / cancelled
 
+    // 读取预测数量 / read predict count
+    const predSteps = getPredictCount();
+
     // 用完整序列基于当前权重模式重新计算 / final prediction with full series
-    state.weights = getCurrentWeights();  // 依据 state.weightMode 取 backtest 或 uniform
-    state.ensemble = ensemblePredict(
-      state.stats.map(function (s) { return s.prediction; }),
-      state.weights
-    );
+    state.weights = getCurrentWeights();
+    state.stats = computeMethodStats(predictors, series);
+
+    // 多步数学预测 / multi-step math predictions
+    const multiStep = computeMultiStepPredictions(series, predSteps, state.weights);
+
+    // 神经网络预测（带训练动画）/ NN prediction with training animation
+    let nnPreds = [];
+    const nnCanvas = document.getElementById('nn-canvas');
+    const nnResultEl = document.getElementById('nn-result');
+    if (nnCanvas && typeof neuralNet !== 'undefined' && neuralNet.animateTraining) {
+      setTrainingProgress(totalSteps, totalSteps, '神经网络训练中...');
+      try {
+        await neuralNet.animateTraining(nnCanvas, series);
+        nnPreds = neuralNet.predict(series, predSteps);
+      } catch (e) {
+        console.warn('[app] NN prediction failed:', e);
+        nnPreds = [];
+      }
+    }
+    state.nnPredictions = nnPreds;
+
+    // 融合 NN + 数学方法 / ensemble NN + math methods
+    const finalEnsemble = integrateNNIntoEnsemble(multiStep.ensemble, nnPreds);
+    state.ensemblePredictions = finalEnsemble;
+    state.ensemble = finalEnsemble.length > 0 ? finalEnsemble[0] : null;
+
+    // 更新 stats 为第一步各方法预测（第一步） / update stats to first-step method predictions
+    if (multiStep.mathPreds.length > 0) {
+      state.stats = multiStep.mathPreds;
+    }
+
+    // 函数拟合 / function fitting
+    if (typeof funcFit !== 'undefined' && funcFit.fit) {
+      try {
+        state.fitCurve = funcFit.fit(series);
+      } catch (e) {
+        console.warn('[app] function fit failed:', e);
+        state.fitCurve = null;
+      }
+    }
 
     // 渲染全部 UI / render everything
     renderAll();
@@ -335,6 +480,8 @@
     renderMethodList();
     renderLineChart();
     renderWeightBars();
+    renderNNResult();
+    renderFunctionFit();
   }
 
   /**
@@ -352,16 +499,74 @@
 
   /**
    * renderEnsemble()
-   * 渲染融合预测结果区域。
+   * 渲染融合预测结果区域（支持多步）。
    */
   function renderEnsemble() {
     const el = document.getElementById('ensemble-result');
     if (!el) return;
-    if (state.ensemble === null || !Number.isFinite(state.ensemble)) {
-      el.textContent = '— 无法预测 —';
+    const preds = state.ensemblePredictions;
+    if (!preds || preds.length === 0) {
+      el.textContent = '— 等待输入 —';
       return;
     }
-    el.textContent = '预测值: ' + formatNumber(state.ensemble);
+    if (preds.length === 1) {
+      el.textContent = '预测值: ' + formatNumber(preds[0]);
+    } else {
+      let text = '预测值: ';
+      for (let i = 0; i < preds.length; i++) {
+        if (i > 0) text += ', ';
+        text += '第' + (i + 1) + '步 ' + formatNumber(preds[i]);
+      }
+      el.textContent = text;
+    }
+  }
+
+  /**
+   * renderNNResult()
+   * 渲染神经网络预测结果。
+   */
+  function renderNNResult() {
+    const el = document.getElementById('nn-result');
+    if (!el) return;
+    const preds = state.nnPredictions;
+    if (!preds || preds.length === 0) {
+      el.textContent = '— 等待输入 —';
+      return;
+    }
+    if (preds.length === 1) {
+      el.textContent = 'NN 预测: ' + formatNumber(preds[0]);
+    } else {
+      let text = '';
+      for (let i = 0; i < preds.length; i++) {
+        if (i > 0) text += ' · ';
+        text += '第' + (i + 1) + '步 ' + formatNumber(preds[i]);
+      }
+      el.textContent = text;
+    }
+  }
+
+  /**
+   * renderFunctionFit()
+   * 渲染函数拟合面板。
+   */
+  function renderFunctionFit() {
+    const panel = document.getElementById('function-fit-panel');
+    const formulaEl = document.getElementById('fit-formula');
+    const domainEl = document.getElementById('fit-domain');
+    const rangeEl = document.getElementById('fit-range');
+    const r2El = document.getElementById('fit-r2');
+    if (!panel) return;
+
+    const fc = state.fitCurve;
+    if (!fc) {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+    if (formulaEl) formulaEl.textContent = fc.formula || 'f(x) = —';
+    if (domainEl) domainEl.textContent = '定义域: ' + (fc.domain || '—');
+    if (rangeEl) rangeEl.textContent = '值域: ' + (fc.range || '—');
+    if (r2El) r2El.textContent = 'R²: ' + (fc.rSquared !== undefined ? fc.rSquared.toFixed(4) : '—');
   }
 
   /**
@@ -433,12 +638,18 @@
 
   /**
    * renderLineChart()
-   * 渲染折线图。
+   * 渲染折线图（多步预测 + 拟合曲线）。
    */
   function renderLineChart() {
     const canvas = document.getElementById('line-chart');
     if (!canvas) return;
-    drawLineChart(canvas, state.series, state.ensemble, state.stats);
+    drawLineChart(
+      canvas,
+      state.series,
+      state.ensemblePredictions,
+      state.stats,
+      state.fitCurve
+    );
   }
 
   /**
@@ -467,10 +678,14 @@
     state.weightMode = checked.value;
     if (state.series.length === 0) return; // 无数据可重算
     state.weights = getCurrentWeights();
-    state.ensemble = ensemblePredict(
-      state.stats.map(function (s) { return s.prediction; }),
-      state.weights
-    );
+    const predSteps = getPredictCount();
+    const multiStep = computeMultiStepPredictions(state.series, predSteps, state.weights);
+    const finalEnsemble = integrateNNIntoEnsemble(multiStep.ensemble, state.nnPredictions);
+    state.ensemblePredictions = finalEnsemble;
+    state.ensemble = finalEnsemble.length > 0 ? finalEnsemble[0] : null;
+    if (multiStep.mathPreds.length > 0) {
+      state.stats = multiStep.mathPreds;
+    }
     renderAll();
   }
 
@@ -514,9 +729,18 @@
     state.stats = [];
     state.weights = [];
     state.ensemble = null;
+    state.ensemblePredictions = [];
+    state.nnPredictions = [];
+    state.fitCurve = null;
 
     const ensembleEl = document.getElementById('ensemble-result');
     if (ensembleEl) ensembleEl.textContent = '— 等待输入 —';
+
+    const nnResultEl = document.getElementById('nn-result');
+    if (nnResultEl) nnResultEl.textContent = '— 等待输入 —';
+
+    const funcFitPanel = document.getElementById('function-fit-panel');
+    if (funcFitPanel) funcFitPanel.style.display = 'none';
 
     const listEl = document.getElementById('method-list');
     if (listEl) {
@@ -528,6 +752,7 @@
 
     clearCanvas(document.getElementById('line-chart'));
     clearCanvas(document.getElementById('weight-chart'));
+    clearCanvas(document.getElementById('nn-canvas'));
 
     showToast('已重置');
   }
@@ -599,6 +824,15 @@
       input: state.series,
       weightMode: state.weightMode,
       ensemblePrediction: state.ensemble,
+      ensemblePredictions: state.ensemblePredictions,
+      nnPredictions: state.nnPredictions,
+      fitCurve: state.fitCurve ? {
+        degree: state.fitCurve.degree,
+        formula: state.fitCurve.formula,
+        domain: state.fitCurve.domain,
+        range: state.fitCurve.range,
+        r2: state.fitCurve.rSquared
+      } : null,
       methods: state.stats.map(function (s, i) {
         return {
           id: s.id,

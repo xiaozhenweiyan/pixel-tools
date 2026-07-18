@@ -551,3 +551,102 @@ footer.pixel-panel p {
   .chart-canvas-wrap { height: 320px; }
   .pixel-zoom-btn { width: 32px; height: 32px; font-size: 18px; }
 }
+
+/* ============================================================
+   预测数量输入框 / Predict Count Input
+   ============================================================ */
+.predict-count-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.predict-count-wrap .pixel-btn {
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+}
+.predict-count-input {
+  width: 60px;
+  padding: 8px 6px;
+  text-align: center;
+  border-radius: 0 4px 4px 0;
+  font-size: 14px;
+  -moz-appearance: textfield;
+}
+.predict-count-input::-webkit-outer-spin-button,
+.predict-count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ============================================================
+   神经网络面板 / Neural Network Panel
+   ============================================================ */
+.nn-panel {
+  padding: 16px;
+}
+.nn-canvas-wrap {
+  width: 100%;
+  height: 240px;
+  background: #1a1a2e;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.nn-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+.nn-result {
+  font-size: 20px;
+  color: #ffd700;
+  text-align: center;
+  padding: 8px;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+
+/* ============================================================
+   函数拟合面板 / Function Fit Panel
+   ============================================================ */
+.function-fit-panel {
+  margin: 0 20px 20px 20px;
+  padding: 16px;
+}
+.function-fit-panel h2 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #ffd700;
+  letter-spacing: 1px;
+}
+.fit-formula {
+  font-size: 20px;
+  color: #ffd700;
+  text-align: center;
+  padding: 12px;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+  word-break: break-all;
+}
+.fit-info {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #aaaaaa;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 900px) {
+  .function-fit-panel { margin: 0 12px 12px 12px; }
+  .nn-canvas-wrap { height: 200px; }
+  .fit-formula { font-size: 16px; }
+}

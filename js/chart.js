@@ -52,17 +52,18 @@ const CHART_TOOLTIP_BG = '#2d2d44';
 /**
  * 折线图状态 / Line chart state。
  * viewport 为数据坐标：x 为 1-based 索引，y 为数值。
- * xMin/xMax 默认 1..n+1（含预测点），yMin/yMax 默认覆盖全部数据。
+ * xMin/xMax 默认 1..n+m（含 n 输入 + m 预测点），yMin/yMax 默认覆盖全部数据。
  */
 let lineChartState = {
   canvas: null,
   series: [],
-  ensemblePrediction: null,
-  methodPredictions: [],  // [{id,name,category,prediction,...}]
+  ensemblePredictions: [],     // 融合预测值数组（多步）/ ensemble predictions array
+  methodPredictions: [],     // [{id,name,category,prediction,...}] 仅第一步各方法预测
   viewport: { xMin: 1, xMax: 2, yMin: 0, yMax: 1 },
   totalY: { min: 0, max: 1 }, // 全量 Y 范围（用于垂直滚动条比较）
   trainingPoints: [],         // 训练阶段累积的回测预测点
-  hoverPoint: null            // {px,py,index,value,type} | null
+  hoverPoint: null,         // {px,py,index,value,type} | null
+  fitCurve: null             // 拟合曲线数据 { evaluate, color, degree }  | null
 };
 
 /**
@@ -228,9 +229,15 @@ function computeTotalYRange(xMin, xMax) {
   }
   // 序列点 X = i+1（1-based）
   for (var i = 0; i < s.series.length; i++) pushAt(i + 1, s.series[i]);
-  // 融合预测与各方法预测位于 X = n+1
-  var predX = s.series.length + 1;
-  pushAt(predX, s.ensemblePrediction);
+  // 融合预测（多步）位于 X = n+1, n+2, ...
+  var n = s.series.length;
+  var ensPreds = Array.isArray(s.ensemblePredictions) ? s.ensemblePredictions :
+    (s.ensemblePrediction !== undefined ? [s.ensemblePrediction] : []);
+  for (var p = 0; p < ensPreds.length; p++) {
+    pushAt(n + 1 + p, ensPreds[p]);
+  }
+  // 各方法预测位于 X = n+1（仅第一步）
+  var predX = n + 1;
   for (var j = 0; j < s.methodPredictions.length; j++) {
     pushAt(predX, s.methodPredictions[j].prediction);
   }
@@ -242,6 +249,17 @@ function computeTotalYRange(xMin, xMax) {
       for (var m = 0; m < tp.methodPredictions.length; m++) {
         pushAt(tp.predictIndex, tp.methodPredictions[m].prediction);
       }
+    }
+  }
+  // 拟合曲线（采样多个点）
+  if (s.fitCurve && typeof s.fitCurve.evaluate === 'function') {
+    var totalX = n + (ensPreds.length > 0 ? ensPreds.length : 1);
+    var samples = 50;
+    for (var f = 0; f <= samples; f++) {
+      var fx = (f / samples) * (totalX - 1) + 1;
+      // 注意：拟合函数 x 从 0 开始，图表 x 从 1 开始
+      var fy = s.fitCurve.evaluate(fx - 1);
+      pushAt(fx, fy);
     }
   }
 
@@ -264,29 +282,48 @@ function computeTotalYRange(xMin, xMax) {
 // ============================================================
 
 /**
- * drawLineChart(canvas, series, ensemblePrediction, methodPredictions)
+ * drawLineChart(canvas, series, ensemblePredictions, methodPredictions, fitCurve)
  *
  * 绘制复古像素风折线图：输入序列金色折线、融合预测火红方块、各方法预测半透明
- * 彩色方块、训练阶段回测点，附带坐标轴/网格/刻度/图例/hover 工具提示。
+ * 彩色方块、训练阶段回测点、拟合曲线，附带坐标轴/网格/刻度/图例/hover 工具提示。
  * 视口由 lineChartState.viewport 控制；新数据到达时自动重置为全显。
+ *
+ * @param {HTMLCanvasElement} canvas
+ * @param {number[]} series  输入序列
+ * @param {number[]|number} ensemblePredictions  融合预测值（数组为多步，单值为一步）
+ * @param {object[]} methodPredictions  各方法预测（仅第一步）
+ * @param {object|null} fitCurve  拟合曲线 { evaluate, degree, formula } 或 null
  */
-function drawLineChart(canvas, series, ensemblePrediction, methodPredictions) {
+function drawLineChart(canvas, series, ensemblePredictions, methodPredictions, fitCurve) {
   if (!canvas) return;
   series = series || [];
   methodPredictions = methodPredictions || [];
 
+  // 兼容单值 / backward compat: single value → array
+  var ensArray;
+  if (Array.isArray(ensemblePredictions)) {
+    ensArray = ensemblePredictions;
+  } else if (ensemblePredictions === null || ensemblePredictions === undefined) {
+    ensArray = [];
+  } else {
+    ensArray = [ensemblePredictions];
+  }
+
   // 检测新数据：引用变化 → 重置水平视口 / fresh data → reset viewport
   var isNewData = series !== lineChartState.series ||
-    ensemblePrediction !== lineChartState.ensemblePrediction ||
-    methodPredictions !== lineChartState.methodPredictions;
+    ensArray !== lineChartState.ensemblePredictions ||
+    methodPredictions !== lineChartState.methodPredictions ||
+    fitCurve !== lineChartState.fitCurve;
 
   lineChartState.canvas = canvas;
   lineChartState.series = series;
-  lineChartState.ensemblePrediction = ensemblePrediction;
+  lineChartState.ensemblePredictions = ensArray;
   lineChartState.methodPredictions = methodPredictions;
+  lineChartState.fitCurve = fitCurve || null;
 
   var n = series.length;
-  var totalX = Math.max(n + 1, 2); // 索引 1..n+1（n 输入 + 1 预测点）
+  var predCount = ensArray.length;
+  var totalX = Math.max(n + Math.max(predCount, 1), 2); // 索引 1..n+m
 
   if (isNewData) {
     lineChartState.viewport.xMin = 1;
@@ -323,6 +360,7 @@ function drawLineChart(canvas, series, ensemblePrediction, methodPredictions) {
   drawLineChartGrid(ctx, layout);
   drawLineChartAxes(ctx, layout);
   drawLineChartTicks(ctx, layout);
+  drawLineChartFitCurve(ctx, layout);  // 拟合曲线（最底层）
   drawLineChartSeries(ctx, layout);
   drawLineChartMethodPredictions(ctx, layout, n);
   drawLineChartEnsemble(ctx, layout, n);
@@ -391,6 +429,47 @@ function drawLineChartTicks(ctx, L) {
   }
 }
 
+/** 拟合曲线（虚线，水蓝色）/ fitted curve (dashed, teal color)。 */
+function drawLineChartFitCurve(ctx, L) {
+  var fc = lineChartState.fitCurve;
+  if (!fc || typeof fc.evaluate !== 'function') return;
+  var n = lineChartState.series.length;
+  var ensPreds = lineChartState.ensemblePredictions || [];
+  var predCount = ensPreds.length;
+  var totalX = n + Math.max(predCount, 1);
+
+  // 只绘制视口内部分 / only draw visible portion
+  var xStart = Math.max(1, L.xMin - 0.5);
+  var xEnd = Math.min(totalX, L.xMax + 0.5);
+  if (xStart >= xEnd) return;
+
+  ctx.save();
+  ctx.strokeStyle = '#00ced1';  // 青色 / cyan-teal
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);      // 虚线 / dashed
+  ctx.beginPath();
+
+  var steps = 100;
+  var first = true;
+  for (var s = 0; s <= steps; s++) {
+    var xChart = xStart + (xEnd - xStart) * (s / steps);
+    // 图表 x 从 1 开始，拟合函数 x 从 0 开始
+    var xFit = xChart - 1;
+    var yVal = fc.evaluate(xFit);
+    if (yVal === null || yVal === undefined || !isFinite(yVal)) continue;
+    var px = L.xToPx(xChart);
+    var py = L.yToPx(yVal);
+    if (first) {
+      ctx.moveTo(px, py);
+      first = false;
+    } else {
+      ctx.lineTo(px, py);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 /** 输入序列折线与数据点（仅视口内）/ input series line & points。 */
 function drawLineChartSeries(ctx, L) {
   var s = lineChartState.series;
@@ -446,32 +525,60 @@ function drawLineChartMethodPredictions(ctx, L, n) {
   ctx.restore();
 }
 
-/** 融合预测点（火红方块 + 虚线连接）/ ensemble prediction point。 */
+/** 融合预测点（火红方块 + 虚线连接，支持多步）/ ensemble prediction points (multi-step)。 */
 function drawLineChartEnsemble(ctx, L, n) {
-  var ep = lineChartState.ensemblePrediction;
-  if (ep === null || ep === undefined || n === 0) return;
-  var predX = n + 1;
-  if (predX < L.xMin || predX > L.xMax) return;
-  var ex = L.xToPx(predX);
-  var ey = L.yToPx(ep);
+  var ensPreds = lineChartState.ensemblePredictions;
+  if (!ensPreds || ensPreds.length === 0 || n === 0) return;
 
-  // 虚线连接最后一个序列点（若可见）
+  // 绘制连接线（从最后一个序列点依次连接所有预测点）
+  ctx.strokeStyle = 'rgba(255,69,0,0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+
+  var firstPredIdx = n + 1;
+  var started = false;
+
+  // 从最后一个序列点开始（若可见）
   if (n >= L.xMin && n <= L.xMax) {
     var lastPx = L.xToPx(n);
     var lastPy = L.yToPx(lineChartState.series[n - 1]);
-    ctx.strokeStyle = 'rgba(255,69,0,0.6)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath(); ctx.moveTo(lastPx, lastPy); ctx.lineTo(ex, ey); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.moveTo(lastPx, lastPy);
+    started = true;
   }
 
-  // 14x14 火红方块 + 白色 3px 边框
-  ctx.fillStyle = CHART_FIRE;
-  ctx.fillRect(ex - 7, ey - 7, 14, 14);
-  ctx.strokeStyle = CHART_BORDER;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(ex - 7, ey - 7, 14, 14);
+  for (var p = 0; p < ensPreds.length; p++) {
+    var predIdx = n + 1 + p;
+    if (predIdx < L.xMin || predIdx > L.xMax) continue;
+    if (ensPreds[p] === null || ensPreds[p] === undefined || !isFinite(ensPreds[p])) continue;
+    var ex = L.xToPx(predIdx);
+    var ey = L.yToPx(ensPreds[p]);
+    if (!started) {
+      ctx.moveTo(ex, ey);
+      started = true;
+    } else {
+      ctx.lineTo(ex, ey);
+    }
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 绘制每个预测点方块 / draw each prediction point
+  for (var p2 = 0; p2 < ensPreds.length; p2++) {
+    var predIdx2 = n + 1 + p2;
+    if (predIdx2 < L.xMin || predIdx2 > L.xMax) continue;
+    var val = ensPreds[p2];
+    if (val === null || val === undefined || !isFinite(val)) continue;
+    var ex2 = L.xToPx(predIdx2);
+    var ey2 = L.yToPx(val);
+
+    // 14x14 火红方块 + 白色 3px 边框 / 14x14 fire-red square with white 3px border
+    ctx.fillStyle = CHART_FIRE;
+    ctx.fillRect(ex2 - 7, ey2 - 7, 14, 14);
+    ctx.strokeStyle = CHART_BORDER;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(ex2 - 7, ey2 - 7, 14, 14);
+  }
 }
 
 /**
@@ -537,10 +644,16 @@ function drawLineChartTrainingPoints(ctx, L, n) {
 /** 图例 / legend (top-right inside plot area)。 */
 function drawLineChartLegend(ctx, L) {
   var items = [
-    { color: CHART_GOLD, label: '输入序列', alpha: 1, size: 8 },
-    { color: CHART_FIRE, label: '融合预测', alpha: 1, size: 10 },
-    { color: '#1e90ff', label: '各方法预测', alpha: 0.65, size: 6 }
+    { color: CHART_GOLD, label: '输入序列', alpha: 1, size: 8, isLine: false },
+    { color: CHART_FIRE, label: '融合预测', alpha: 1, size: 10, isLine: false },
+    { color: '#1e90ff', label: '各方法预测', alpha: 0.65, size: 6, isLine: false }
   ];
+
+  // 有拟合曲线时追加图例
+  if (lineChartState.fitCurve && typeof lineChartState.fitCurve.evaluate === 'function') {
+    items.push({ color: '#00ced1', label: '拟合曲线', alpha: 1, size: 0, isLine: true });
+  }
+
   var boxW = 132, boxH = 14 * items.length + 10;
   var x = L.plotR - boxW - 6;
   var y = L.plotT + 6;
@@ -559,11 +672,22 @@ function drawLineChartLegend(ctx, L) {
     var iy = y + 9 + i * 14;
     ctx.save();
     ctx.globalAlpha = it.alpha;
-    ctx.fillStyle = it.color;
-    ctx.fillRect(x + 8, iy - it.size / 2, it.size, it.size);
+    if (it.isLine) {
+      ctx.strokeStyle = it.color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x + 8, iy);
+      ctx.lineTo(x + 8 + 20, iy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.fillStyle = it.color;
+      ctx.fillRect(x + 8, iy - it.size / 2, it.size, it.size);
+    }
     ctx.restore();
     ctx.fillStyle = CHART_BORDER;
-    ctx.fillText(it.label, x + 8 + it.size + 6, iy);
+    ctx.fillText(it.label, x + 8 + 24, iy);
   });
 }
 
@@ -670,16 +794,20 @@ function findNearestLineChartPoint(mx, my, threshold) {
     }
   }
 
-  // 融合预测点
-  var ep = s.ensemblePrediction;
-  if (ep !== null && ep !== undefined && n > 0) {
-    var eidx = n + 1;
-    if (eidx >= layout.xMin && eidx <= layout.xMax) {
-      var epx = layout.xToPx(eidx), epy = layout.yToPx(ep);
-      var d2 = Math.hypot(epx - mx, epy - my);
-      if (d2 <= bestDist) {
-        bestDist = d2;
-        best = { px: epx, py: epy, index: eidx, value: ep, type: 'ensemble' };
+  // 融合预测点（多步）
+  var ensPreds = s.ensemblePredictions || [];
+  if (ensPreds.length > 0 && n > 0) {
+    for (var ei = 0; ei < ensPreds.length; ei++) {
+      var ep2 = ensPreds[ei];
+      if (ep2 === null || ep2 === undefined || !isFinite(ep2)) continue;
+      var eidx2 = n + 1 + ei;
+      if (eidx2 >= layout.xMin && eidx2 <= layout.xMax) {
+        var epx2 = layout.xToPx(eidx2), epy2 = layout.yToPx(ep2);
+        var d2b = Math.hypot(epx2 - mx, epy2 - my);
+        if (d2b <= bestDist) {
+          bestDist = d2b;
+          best = { px: epx2, py: epy2, index: eidx2, value: ep2, type: 'ensemble' };
+        }
       }
     }
   }
@@ -723,7 +851,9 @@ function findNearestLineChartPoint(mx, my, threshold) {
 function zoomLineChart(factor) {
   var vp = lineChartState.viewport;
   var n = lineChartState.series.length;
-  var totalX = Math.max(n + 1, 2);
+  var ensPreds = lineChartState.ensemblePredictions || [];
+  var predCount = ensPreds.length;
+  var totalX = Math.max(n + Math.max(predCount, 1), 2);
   var center = (vp.xMin + vp.xMax) / 2;
   var newRange = (vp.xMax - vp.xMin) * factor;
   newRange = Math.max(3, Math.min(totalX, newRange));
@@ -745,7 +875,9 @@ function updateScrollbars(canvas) {
 
   var vp = lineChartState.viewport;
   var n = lineChartState.series.length;
-  var totalX = Math.max(n + 1, 2);
+  var ensPreds = lineChartState.ensemblePredictions || [];
+  var predCount = ensPreds.length;
+  var totalX = Math.max(n + Math.max(predCount, 1), 2);
 
   // 水平滚动条
   var visX = vp.xMax - vp.xMin;
@@ -1223,12 +1355,13 @@ function animateLineChartStep(canvas, stepData) {
 function resetLineChartState() {
   lineChartState.canvas = null;
   lineChartState.series = [];
-  lineChartState.ensemblePrediction = null;
+  lineChartState.ensemblePredictions = [];
   lineChartState.methodPredictions = [];
   lineChartState.viewport = { xMin: 1, xMax: 2, yMin: 0, yMax: 1 };
   lineChartState.totalY = { min: 0, max: 1 };
   lineChartState.trainingPoints = [];
   lineChartState.hoverPoint = null;
+  lineChartState.fitCurve = null;
 }
 
 /** 清空权重条形图动画状态（取消进行中的动画）/ reset weight bar anim state。 */
