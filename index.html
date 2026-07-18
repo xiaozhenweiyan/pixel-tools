@@ -30,18 +30,18 @@
           <label><input type="radio" name="weight-mode" value="backtest" checked> 回测权重</label>
           <label><input type="radio" name="weight-mode" value="uniform"> 均匀权重</label>
         </div>
+        <div class="training-progress" id="training-progress" style="display:none;">
+          <div class="progress-label" id="progress-label">训练中...</div>
+          <div class="pixel-progress-track">
+            <div class="pixel-progress-fill" id="progress-fill" style="width:0%;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Ensemble Result Panel -->
       <div class="pixel-panel result-panel">
         <h2>融合预测结果</h2>
         <div id="ensemble-result" class="ensemble-display">— 等待输入 —</div>
-      </div>
-
-      <!-- Line Chart Panel -->
-      <div class="pixel-panel chart-panel">
-        <h2>折线图</h2>
-        <canvas id="line-chart" width="800" height="400"></canvas>
       </div>
     </section>
 
@@ -60,6 +60,21 @@
       </div>
     </aside>
   </main>
+
+  <div class="chart-panel-bottom pixel-panel">
+    <h2>折线图（拖动滚动条平移 · +/- 缩放）</h2>
+    <div class="chart-canvas-wrap" id="line-chart-wrap">
+      <canvas id="line-chart"></canvas>
+      <!-- 自制滚动条 -->
+      <div class="pixel-scrollbar-h" id="scrollbar-h"><div class="pixel-scrollbar-thumb-h" id="scrollbar-thumb-h"></div></div>
+      <div class="pixel-scrollbar-v" id="scrollbar-v"><div class="pixel-scrollbar-thumb-v" id="scrollbar-thumb-v"></div></div>
+      <!-- 缩放按钮 -->
+      <div class="zoom-controls">
+        <button class="pixel-btn pixel-zoom-btn" id="btn-zoom-in">+</button>
+        <button class="pixel-btn pixel-zoom-btn" id="btn-zoom-out">−</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="pixel-panel" style="text-align:center; margin:20px;">
     <p>© 2026 Pixel Predictor · MIT License · 复古深空像素风</p>

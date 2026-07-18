@@ -45,6 +45,10 @@
     ensemble: null            // 当前融合预测 number|null
   };
 
+  // 训练动画状态 / training animation state
+  let trainingInProgress = false;
+  let trainingTimeoutId = null;  // 用于取消 / for cancellation
+
   // ============================================================
   // Part 1: 输入解析与校验 / Input Parsing & Validation
   // ============================================================
@@ -134,27 +138,192 @@
   // ============================================================
 
   /**
+   * sleep(ms) → Promise
+   * 训练动画延时辅助；同时把 timeout 句柄记录到 trainingTimeoutId，
+   * 以便 resetAll 能取消当前挂起的 sleep（仅追踪最新一个）。
+   */
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      trainingTimeoutId = setTimeout(resolve, ms);
+    });
+  }
+
+  /**
+   * setTrainingProgress(current, total, label)
+   * 控制 #training-progress 容器与进度条的显示/更新。
+   * total <= 0 → 隐藏容器；否则显示并设置标签与宽度。
+   * 对缺失 DOM 元素进行防御性处理。
+   */
+  function setTrainingProgress(current, total, label) {
+    const progressEl = document.getElementById('training-progress');
+    if (!progressEl) return;
+    if (typeof total !== 'number' || total <= 0) {
+      progressEl.style.display = 'none';
+      return;
+    }
+    progressEl.style.display = 'block';
+    const labelEl = document.getElementById('progress-label');
+    if (labelEl) labelEl.textContent = label || '';
+    const fillEl = document.getElementById('progress-fill');
+    if (fillEl) {
+      const pct = Math.max(0, Math.min(100, (current / total) * 100));
+      fillEl.style.width = pct + '%';
+    }
+  }
+
+  /**
+   * setPredictButtonEnabled(enabled)
+   * 启用/禁用预测按钮（同时切换文案）与权重模式单选。
+   */
+  function setPredictButtonEnabled(enabled) {
+    const btn = document.getElementById('btn-predict');
+    if (btn) {
+      btn.disabled = !enabled;
+      btn.textContent = enabled ? '预测' : '训练中...';
+    }
+    const radios = document.querySelectorAll('input[name="weight-mode"]');
+    for (let i = 0; i < radios.length; i++) {
+      radios[i].disabled = !enabled;
+    }
+  }
+
+  /**
    * runPrediction()
-   * 读取输入 → 解析 → 校验 → 计算统计与融合预测 → 渲染。
+   * 读取输入 → 解析 → 校验 → 启动训练动画。
+   * 训练进行中再次点击将被忽略（防重入）。
    */
   function runPrediction() {
+    if (trainingInProgress) return;  // 防止重复点击 / prevent double-click
     const textarea = document.getElementById('input-series');
     if (!textarea) return;
     const text = textarea.value || '';
-    const { values, ignored } = parseSequence(text);
-    if (ignored > 0) {
-      showToast('已忽略 ' + ignored + ' 个非法值');
+    const parsed = parseSequence(text);
+    if (parsed.ignored > 0) {
+      showToast('已忽略 ' + parsed.ignored + ' 个非法值');
     }
-    if (!validateInput(values)) return;
+    if (!validateInput(parsed.values)) return;
+    runTrainingAnimation(parsed.values);
+  }
 
-    state.series = values;
-    state.stats = computeMethodStats(predictors, values);
-    state.weights = getCurrentWeights();
+  /**
+   * runTrainingAnimation(series) → Promise<void>
+   *
+   * 渐进式训练动画编排：
+   *   1. 禁用预测按钮、显示训练 UI、重置图表动画状态。
+   *   2. 计算渐进式回测步（computeIncrementalBacktest）。
+   *   3. 初始绘制：折线图显示输入序列（尚无预测），权重条为均匀权重。
+   *   4. 逐步播放：权重条形图过渡动画（400ms）+ 折线图回测点入场动画（300ms）。
+   *   5. 训练完成后用完整序列执行最终预测并刷新全部 UI。
+   *   6. 收尾：隐藏进度条、恢复按钮、置 trainingInProgress=false。
+   *
+   * 取消：resetAll 把 trainingInProgress 置 false 并清当前 timeout，
+   * 循环顶部与关键 await 后会检测该标志并提前 return。
+   */
+  async function runTrainingAnimation(series) {
+    // 1. 禁用按钮、显示训练 UI / disable predict, show training UI
+    trainingInProgress = true;
+    setPredictButtonEnabled(false);
+
+    const lineCanvas = document.getElementById('line-chart');
+    const weightCanvas = document.getElementById('weight-chart');
+
+    // 2. 重置图表状态（全新动画）/ reset chart states for fresh animation
+    if (typeof resetLineChartState === 'function') resetLineChartState();
+    if (typeof resetWeightBarAnimState === 'function') resetWeightBarAnimState();
+
+    // 3. 计算渐进式回测步 / compute incremental backtest steps
+    const steps = computeIncrementalBacktest(predictors, series);
+    const totalSteps = steps.length;
+
+    // 4. 初始绘制：输入序列上折线图，权重条用均匀权重 / initial draw
+    const initialWeights = uniformWeights(predictors, series);
+    state.series = series;
+    state.weights = initialWeights;
+    state.stats = computeMethodStats(predictors, series);
+    state.ensemble = null;  // 训练期间尚无最终预测 / no final prediction yet
+    if (lineCanvas) drawLineChart(lineCanvas, series, null, state.stats);
+    if (weightCanvas) drawWeightBars(weightCanvas, state.stats, initialWeights);
+
+    // 5. 逐步播放训练动画 / run each training step with animation
+    if (totalSteps === 0) {
+      // 数据不足以训练（series.length < 3）/ not enough data to train
+      setTrainingProgress(0, 0, '');
+      await sleep(200);
+    } else {
+      for (let i = 0; i < totalSteps; i++) {
+        if (!trainingInProgress) return;  // 被取消 / cancelled
+        const stepData = steps[i];
+        setTrainingProgress(
+          i + 1, totalSteps,
+          '训练中 step ' + (i + 1) + ' / ' + totalSteps
+        );
+
+        // 构建 animateLineChartStep 需要的 methodPredictions / build methodPreds
+        const methodPreds = state.stats.map(function (s, idx) {
+          return {
+            id: s.id,
+            name: s.name,
+            category: s.category,
+            prediction: stepData.methodPredictions[idx]
+          };
+        });
+
+        // 本步融合预测 / ensemble for this step using step's weights
+        const stepEnsemble = ensemblePredict(
+          stepData.methodPredictions,
+          stepData.weights
+        );
+
+        // 更新权重到本步权重（供方法列表展示）
+        state.weights = stepData.weights;
+
+        // 权重条形图过渡动画（与折线图动画并发，不 await）
+        if (weightCanvas && typeof animateWeightBarsUpdate === 'function') {
+          animateWeightBarsUpdate(weightCanvas, state.stats, stepData.weights);
+        }
+
+        // 折线图新增回测预测点（入场动画 300ms）
+        if (lineCanvas && typeof animateLineChartStep === 'function') {
+          await animateLineChartStep(lineCanvas, {
+            step: stepData.step,
+            predictIndex: stepData.predictIndex,
+            actual: stepData.actual,
+            methodPredictions: methodPreds,
+            ensemblePrediction: stepEnsemble
+          });
+        }
+
+        if (!trainingInProgress) return;  // 被取消 / cancelled
+
+        // 渲染方法列表（含最新权重）/ refresh method list
+        renderMethodList();
+
+        // 步间小间隔（动画本身约 300-400ms，补足至约 750ms 节奏）
+        await sleep(450);
+      }
+    }
+
+    // 6. 训练完成，执行最终预测 / training complete, final prediction
+    if (!trainingInProgress) return;  // 被取消 / cancelled
+    setTrainingProgress(totalSteps, totalSteps, '训练完成，执行最终预测...');
+    await sleep(300);
+    if (!trainingInProgress) return;  // 被取消 / cancelled
+
+    // 用完整序列基于当前权重模式重新计算 / final prediction with full series
+    state.weights = getCurrentWeights();  // 依据 state.weightMode 取 backtest 或 uniform
     state.ensemble = ensemblePredict(
       state.stats.map(function (s) { return s.prediction; }),
       state.weights
     );
+
+    // 渲染全部 UI / render everything
     renderAll();
+
+    // 7. 收尾 / cleanup
+    setTrainingProgress(0, 0, '');  // 隐藏进度条 / hides progress
+    setPredictButtonEnabled(true);
+    trainingInProgress = false;
+    showToast('预测完成');
   }
 
   /**
@@ -289,8 +458,10 @@
   /**
    * onWeightModeChange()
    * 切换权重模式后重新计算权重与融合预测并重渲染。
+   * 训练进行中忽略切换（按钮已被禁用，但此处再次防御）。
    */
   function onWeightModeChange() {
+    if (trainingInProgress) return;  // 训练中忽略 / ignore during training
     const checked = document.querySelector('input[name="weight-mode"]:checked');
     if (!checked) return;
     state.weightMode = checked.value;
@@ -321,8 +492,21 @@
   /**
    * resetAll()
    * 重置全部状态与 UI。
+   * 若训练动画进行中，先取消（置 trainingInProgress=false、清挂起 timeout、
+   * 重置图表动画状态、隐藏进度条、恢复按钮）。
    */
   function resetAll() {
+    // 取消训练动画 / cancel any running training animation
+    trainingInProgress = false;
+    if (trainingTimeoutId !== null) {
+      clearTimeout(trainingTimeoutId);
+      trainingTimeoutId = null;
+    }
+    if (typeof resetLineChartState === 'function') resetLineChartState();
+    if (typeof resetWeightBarAnimState === 'function') resetWeightBarAnimState();
+    setTrainingProgress(0, 0, '');  // 隐藏训练进度条 / hide training progress
+    setPredictButtonEnabled(true);
+
     const textarea = document.getElementById('input-series');
     if (textarea) textarea.value = '';
 
