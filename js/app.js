@@ -212,30 +212,6 @@
     return totalAPE / count;
   }
 
-  /**
-   * integrateNNIntoEnsemble(mathEnsemble, nnPreds) → number[]
-   * 将神经网络预测与数学方法融合预测再做一次简单加权融合。
-   * NN 权重 0.3，数学融合权重 0.7（启发式）。
-   */
-  function integrateNNIntoEnsemble(mathEnsemble, nnPreds) {
-    const result = [];
-    const wMath = 0.7;
-    const wNN = 0.3;
-    const len = Math.max(mathEnsemble.length, nnPreds.length);
-    for (let i = 0; i < len; i++) {
-      const mVal = i < mathEnsemble.length ? mathEnsemble[i] : null;
-      const nVal = i < nnPreds.length ? nnPreds[i] : null;
-      if (mVal === null || mVal === undefined || !isFinite(mVal)) {
-        result.push(nVal);
-      } else if (nVal === null || nVal === undefined || !isFinite(nVal)) {
-        result.push(mVal);
-      } else {
-        result.push(mVal * wMath + nVal * wNN);
-      }
-    }
-    return result;
-  }
-
   // ============================================================
   // Part 3: 预测流程 / Prediction Flow
   // ============================================================
@@ -422,31 +398,12 @@
     state.weights = getCurrentWeights();
     state.stats = computeMethodStats(predictors, series);
 
-    // 多步数学预测 / multi-step math predictions
+    // 多步数学预测（融合结果仅基于20种数学方法）/ multi-step math predictions
     const multiStep = computeMultiStepPredictions(series, predSteps, state.weights);
+    state.ensemblePredictions = multiStep.ensemble;
+    state.ensemble = multiStep.ensemble.length > 0 ? multiStep.ensemble[0] : null;
 
-    // 神经网络预测（带训练动画）/ NN prediction with training animation
-    let nnPreds = [];
-    const nnCanvas = document.getElementById('nn-canvas');
-    const nnResultEl = document.getElementById('nn-result');
-    if (nnCanvas && typeof neuralNet !== 'undefined' && neuralNet.animateTraining) {
-      setTrainingProgress(totalSteps, totalSteps, '神经网络训练中...');
-      try {
-        await neuralNet.animateTraining(nnCanvas, series);
-        nnPreds = neuralNet.predict(series, predSteps);
-      } catch (e) {
-        console.warn('[app] NN prediction failed:', e);
-        nnPreds = [];
-      }
-    }
-    state.nnPredictions = nnPreds;
-
-    // 融合 NN + 数学方法 / ensemble NN + math methods
-    const finalEnsemble = integrateNNIntoEnsemble(multiStep.ensemble, nnPreds);
-    state.ensemblePredictions = finalEnsemble;
-    state.ensemble = finalEnsemble.length > 0 ? finalEnsemble[0] : null;
-
-    // 更新 stats 为第一步各方法预测（第一步） / update stats to first-step method predictions
+    // 更新 stats 为第一步各方法预测 / update stats to first-step method predictions
     if (multiStep.mathPreds.length > 0) {
       state.stats = multiStep.mathPreds;
     }
@@ -461,8 +418,26 @@
       }
     }
 
-    // 渲染全部 UI / render everything
+    // 先渲染数学方法结果 / render math methods first
     renderAll();
+
+    // 神经网络预测（独立，不参与融合）/ NN prediction (independent, not in ensemble)
+    // 渐进式训练：用前几个数字预测下一个，误差在±0.1内才训练下一组
+    const nnCanvas = document.getElementById('nn-canvas');
+    let nnPreds = [];
+    if (nnCanvas && typeof neuralNet !== 'undefined' && neuralNet.progressiveTrain) {
+      setTrainingProgress(1, 2, '神经网络渐进训练中...');
+      try {
+        nnPreds = await neuralNet.progressiveTrain(nnCanvas, series, predSteps, function (cur, total, stage) {
+          setTrainingProgress(cur, total, stage);
+        });
+      } catch (e) {
+        console.warn('[app] NN prediction failed:', e);
+        nnPreds = [];
+      }
+    }
+    state.nnPredictions = nnPreds;
+    renderNNResult();
 
     // 7. 收尾 / cleanup
     setTrainingProgress(0, 0, '');  // 隐藏进度条 / hides progress
@@ -499,7 +474,7 @@
 
   /**
    * renderEnsemble()
-   * 渲染融合预测结果区域（支持多步）。
+   * 渲染融合预测结果区域（列表格式）。
    */
   function renderEnsemble() {
     const el = document.getElementById('ensemble-result');
@@ -509,21 +484,14 @@
       el.textContent = '— 等待输入 —';
       return;
     }
-    if (preds.length === 1) {
-      el.textContent = '预测值: ' + formatNumber(preds[0]);
-    } else {
-      let text = '预测值: ';
-      for (let i = 0; i < preds.length; i++) {
-        if (i > 0) text += ', ';
-        text += '第' + (i + 1) + '步 ' + formatNumber(preds[i]);
-      }
-      el.textContent = text;
-    }
+    // 列表格式：[v1, v2, v3] / list format
+    const parts = preds.map(function (p) { return formatNumber(p); });
+    el.textContent = '[' + parts.join(', ') + ']';
   }
 
   /**
    * renderNNResult()
-   * 渲染神经网络预测结果。
+   * 渲染神经网络预测结果（独立，不参与融合）。
    */
   function renderNNResult() {
     const el = document.getElementById('nn-result');
@@ -533,16 +501,9 @@
       el.textContent = '— 等待输入 —';
       return;
     }
-    if (preds.length === 1) {
-      el.textContent = 'NN 预测: ' + formatNumber(preds[0]);
-    } else {
-      let text = '';
-      for (let i = 0; i < preds.length; i++) {
-        if (i > 0) text += ' · ';
-        text += '第' + (i + 1) + '步 ' + formatNumber(preds[i]);
-      }
-      el.textContent = text;
-    }
+    // 列表格式：[v1, v2, v3] / list format
+    const parts = preds.map(function (p) { return formatNumber(p); });
+    el.textContent = '[' + parts.join(', ') + ']';
   }
 
   /**
@@ -680,9 +641,8 @@
     state.weights = getCurrentWeights();
     const predSteps = getPredictCount();
     const multiStep = computeMultiStepPredictions(state.series, predSteps, state.weights);
-    const finalEnsemble = integrateNNIntoEnsemble(multiStep.ensemble, state.nnPredictions);
-    state.ensemblePredictions = finalEnsemble;
-    state.ensemble = finalEnsemble.length > 0 ? finalEnsemble[0] : null;
+    state.ensemblePredictions = multiStep.ensemble;
+    state.ensemble = multiStep.ensemble.length > 0 ? multiStep.ensemble[0] : null;
     if (multiStep.mathPreds.length > 0) {
       state.stats = multiStep.mathPreds;
     }

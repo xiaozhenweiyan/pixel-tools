@@ -379,8 +379,9 @@ function redrawLineChart() {
   drawLineChart(
     lineChartState.canvas,
     lineChartState.series,
-    lineChartState.ensemblePrediction,
-    lineChartState.methodPredictions
+    lineChartState.ensemblePredictions,
+    lineChartState.methodPredictions,
+    lineChartState.fitCurve
   );
 }
 
