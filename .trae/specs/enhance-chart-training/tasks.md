@@ -82,10 +82,10 @@
   - [x] SubTask 9.3: 权重模式切换在训练完成后才生效（训练中禁用切换）
   - [x] SubTask 9.4: 重置按钮在训练中可中断动画（清除 timeout + 恢复初始状态）
 
-- [ ] Task 10: 上传到 GitHub
-  - [ ] SubTask 10.1: 在 `/workspace` 执行 `git add -A && git commit -m "feat: 折线图重构与渐进式训练动画"`
-  - [ ] SubTask 10.2: 推送到 `github-remote main` 分支
-  - [ ] SubTask 10.3: 验证 GitHub Pages 自动重新构建，访问 https://xiaozhenweiyan.github.io/pixel-predictor/ 确认更新
+- [x] Task 10: 上传到 GitHub
+  - [x] SubTask 10.1: 在 `/workspace` 执行 `git add -A && git commit -m "feat: 折线图重构与渐进式训练动画"`
+  - [x] SubTask 10.2: 推送到 `github-remote main` 分支
+  - [x] SubTask 10.3: 验证 GitHub Pages 自动重新构建，访问 https://xiaozhenweiyan.github.io/pixel-predictor/ 确认更新
 
 # Task Dependencies
 - Task 2、3 依赖 Task 1（需要布局与画布尺寸修复）

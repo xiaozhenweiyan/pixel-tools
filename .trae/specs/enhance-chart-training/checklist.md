@@ -86,7 +86,7 @@
 - [x] 4 个 JS 文件无语法错误
 
 ## GitHub 上传
-- [ ] git commit 成功
-- [ ] 推送到 github-remote main 分支成功
-- [ ] GitHub Pages 自动重新构建
-- [ ] 访问 https://xiaozhenweiyan.github.io/pixel-predictor/ 确认更新生效
+- [x] git commit 成功
+- [x] 推送到 github-remote main 分支成功
+- [x] GitHub Pages 自动重新构建
+- [x] 访问 https://xiaozhenweiyan.github.io/pixel-predictor/ 确认更新生效
