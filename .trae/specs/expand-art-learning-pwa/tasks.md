@@ -166,7 +166,30 @@
   - `programmatic` TR-9.3: 恶意构造如 `constructor.constructor` 不可达
   - `human-judgement` TR-9.4: 安全审查报告更新，记录加固措施
 
-## [ ] Task 10: 学习系统首页 + 数学学习卡片分组
+## [ ] Task 10: 中英文双语国际化 (i18n)
+- **Priority**: high
+- **Depends On**: None
+- **Description**:
+  - 新建 js/i18n.js 模块，提供 i18n.t(key) 翻译函数
+  - 翻译数据：中文 zh 和英文 en 两套，覆盖所有 UI 文字
+  - 自动检测系统语言：navigator.language，zh/zh-CN/zh-TW → 中文，其他 → 英文
+  - 设置页新增语言下拉框：跟随系统 / 中文 / 英文
+  - 语言选择持久化到 localStorage（key: pixel_tools_lang，值：'auto' | 'zh' | 'en'）
+  - HTML 静态文字用 data-i18n="key" 标记，初始化时自动替换
+  - JS 动态文字统一用 i18n.t('key') 获取
+  - 切换语言时：扫描所有 data-i18n 元素重新填充，更新 document.title
+  - index.html 加载 i18n.js（在 app.js 之前）
+  - 所有页面文字都走翻译（标题、按钮、标签、提示、toast、帮助文本等）
+  - 用户输入内容（如函数表达式、计算器输入）不翻译
+- **Acceptance Criteria Addressed**: [AC-13, AC-14, AC-15]
+- **Test Requirements**:
+  - `human-judgement` TR-10.1: 中文系统访问显示中文界面
+  - `human-judgement` TR-10.2: 英文系统访问显示英文界面
+  - `human-judgement` TR-10.3: 设置页语言下拉切换实时生效
+  - `programmatic` TR-10.4: localStorage 中保存语言偏好，刷新后保持
+  - `human-judgement` TR-10.5: 所有页面文字正确翻译，无遗漏
+
+## [ ] Task 11: 学习系统首页 + 数学学习卡片分组
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -184,9 +207,9 @@
   - `human-judgement` TR-10.3: 分组下有四则运算和混合运算两张卡片
   - `human-judgement` TR-10.4: 页面风格与像素数学首页一致
 
-## [ ] Task 11: 四则运算学习卡片
+## [ ] Task 12: 四则运算学习卡片
 - **Priority**: high
-- **Depends On**: [Task 10]
+- **Depends On**: [Task 11]
 - **Description**:
   - 新建 math-cards.js 模块
   - 四则运算学习页面（arithmetic-page）
@@ -208,9 +231,9 @@
   - `human-judgement` TR-11.5: 完成 20 关后显示结果页，含星级评价
   - `human-judgement` TR-11.6: 动画流畅，像素风一致
 
-## [ ] Task 12: 混合运算学习卡片
+## [ ] Task 13: 混合运算学习卡片
 - **Priority**: high
-- **Depends On**: [Task 11]
+- **Depends On**: [Task 12]
 - **Description**:
   - 混合运算学习页面（mixed-arithmetic-page）
   - 难度分级：简单 / 中等 / 困难
@@ -229,7 +252,7 @@
   - `human-judgement` TR-12.4: 完成后显示结果页和星级
   - `programmatic` TR-12.5: 题目答案为整数，无除不尽情况
 
-## [ ] Task 13: 移动端响应式适配
+## [ ] Task 14: 移动端响应式适配
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -252,7 +275,7 @@
   - `human-judgement` TR-13.4: 像素绘图编辑器手指可绘画
   - `human-judgement` TR-13.5: 页面不溢出，无横向滚动条
 
-## [ ] Task 14: PWA 支持
+## [ ] Task 15: PWA 支持
 - **Priority**: high
 - **Depends On**: None
 - **Description**:
@@ -273,14 +296,15 @@
   - `human-judgement` TR-14.4: 可添加到主屏幕
   - `human-judgement` TR-14.5: 离线时已缓存页面可打开
 
-## [ ] Task 15: 更新 README.md
+## [ ] Task 16: 更新 README.md
 - **Priority**: medium
-- **Depends On**: [Task 4, Task 5, Task 7, Task 10, Task 11, Task 13, Task 14]
+- **Depends On**: [Task 4, Task 5, Task 7, Task 10, Task 11, Task 12, Task 14, Task 15]
 - **Description**:
   - 功能列表新增：像素绘图编辑器、像素音乐合成器、生成器 4 种新算法
   - 功能列表新增：学习系统（四则运算卡片、混合运算卡片）
   - 功能列表新增：函数系统参数滑块 + 动画
   - 功能列表新增：移动端适配 + PWA
+  - 功能列表新增：中英文双语国际化
   - 更新页面结构图（含艺术类分组、学习系统分组）
   - 更新文件结构（新增 js/pixel-drawing-editor.js、js/pixel-music.js、js/math-cards.js、manifest.json、service-worker.js、icons/）
   - 更新使用说明
@@ -290,9 +314,9 @@
   - `programmatic` TR-15.2: 页面结构图和文件结构已更新
   - `human-judgement` TR-15.3: 内容准确无误
 
-## [ ] Task 16: 提交并推送 GitHub
+## [ ] Task 17: 提交并推送 GitHub
 - **Priority**: high
-- **Depends On**: [Task 1-15]
+- **Depends On**: [Task 1-16]
 - **Description**:
   - 所有改动分组创建 conventional commits
   - 推送到 origin main 和 gh-pages
@@ -310,13 +334,13 @@
 - [Task 6] depends on [Task 5]
 - [Task 7] depends on [Task 3]
 - [Task 8] depends on [Task 7]
-- [Task 11] depends on [Task 10]
 - [Task 12] depends on [Task 11]
-- [Task 15] depends on [Task 4, Task 5, Task 7, Task 10, Task 11, Task 13, Task 14]
-- [Task 16] depends on all
+- [Task 13] depends on [Task 12]
+- [Task 16] depends on [Task 4, Task 5, Task 7, Task 10, Task 11, Task 12, Task 14, Task 15]
+- [Task 17] depends on all
 
 # 可并行任务
-- Task 1/4/9/10/13/14 可并行（独立模块）
+- Task 1/4/9/10/11/14/15 可并行（独立模块）
 - Task 3 独立（首页重构）
 - Task 2 等 Task 1
 - Task 5/7 等 Task 3
