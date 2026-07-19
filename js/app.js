@@ -61,6 +61,293 @@
   const LONGTERM_MODE_KEY = 'longterm_mode';
 
   // ============================================================
+  // 用户档案 / User Profile (sessionStorage, 临时账号)
+  // ============================================================
+  const PROFILE_KEY = 'pixel_user_profile';
+  let profile = { nickname: '访客', avatar: '', bgType: '', bgValue: '' };
+
+  function loadProfile() {
+    try {
+      const saved = sessionStorage.getItem(PROFILE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        profile = {
+          nickname: parsed.nickname || '访客',
+          avatar: parsed.avatar || '',
+          bgType: parsed.bgType || '',
+          bgValue: parsed.bgValue || ''
+        };
+        return true;  // 已有 profile
+      }
+    } catch (e) { /* ignore */ }
+    return false;  // 无 profile，需弹窗
+  }
+
+  function saveProfile() {
+    try {
+      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    } catch (e) {
+      // 容量溢出（base64 太大）时提示
+      showToast('存储空间不足，请用更小的图片');
+    }
+  }
+
+  function clearProfile() {
+    try {
+      sessionStorage.removeItem(PROFILE_KEY);
+    } catch (e) { /* ignore */ }
+    profile = { nickname: '访客', avatar: '', bgType: '', bgValue: '' };
+  }
+
+  function showRegisterModal() {
+    const modal = document.getElementById('register-modal');
+    const input = document.getElementById('register-nickname');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    if (input) {
+      input.value = '';
+      input.placeholder = '访客';
+      setTimeout(function () { input.focus(); }, 50);
+    }
+  }
+
+  function hideRegisterModal() {
+    const modal = document.getElementById('register-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function initRegisterModal() {
+    const confirmBtn = document.getElementById('register-confirm');
+    const skipBtn = document.getElementById('register-skip');
+    const input = document.getElementById('register-nickname');
+
+    function confirmRegister() {
+      let nickname = input ? (input.value || '').trim() : '';
+      if (!nickname) nickname = '访客';
+      if (nickname.length > 20) nickname = nickname.slice(0, 20);
+      profile.nickname = nickname;
+      saveProfile();
+      hideRegisterModal();
+      updateTopbar();
+      showToast('欢迎你，' + nickname + '！');
+    }
+
+    if (confirmBtn) confirmBtn.addEventListener('click', confirmRegister);
+    if (skipBtn) skipBtn.addEventListener('click', function () {
+      profile.nickname = '访客';
+      saveProfile();
+      hideRegisterModal();
+      updateTopbar();
+      showToast('已使用默认昵称"访客"');
+    });
+    if (input) input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmRegister();
+      }
+    });
+  }
+
+  // ============================================================
+  // 顶栏 / Topbar
+  // ============================================================
+  function updateTopbar() {
+    const avatarEl = document.getElementById('topbar-avatar');
+    const nicknameEl = document.getElementById('topbar-nickname');
+    if (nicknameEl) nicknameEl.textContent = profile.nickname;
+    if (avatarEl) {
+      if (profile.avatar) {
+        avatarEl.style.backgroundImage = 'url(' + profile.avatar + ')';
+        avatarEl.textContent = '';
+      } else {
+        avatarEl.style.backgroundImage = '';
+        // 显示昵称首字（中文取第一个字符，英文取首字母大写）
+        const firstChar = profile.nickname ? profile.nickname.charAt(0) : '?';
+        avatarEl.textContent = firstChar;
+      }
+    }
+  }
+
+  function initTopbar() {
+    const settingsBtn = document.getElementById('btn-settings');
+    const logoutBtn = document.getElementById('btn-logout');
+    if (settingsBtn) settingsBtn.addEventListener('click', showSettings);
+    if (logoutBtn) logoutBtn.addEventListener('click', function () {
+      clearProfile();
+      applyBackground();  // 恢复默认背景
+      updateTopbar();
+      showRegisterModal();
+      showToast('已退出，数据已清除');
+    });
+  }
+
+  // ============================================================
+  // 设置页面 / Settings Page
+  // ============================================================
+
+  function showSettings() {
+    const landing = document.getElementById('landing-page');
+    const predictor = document.getElementById('predictor-page');
+    const calc = document.getElementById('calculator-page');
+    const settings = document.getElementById('settings-page');
+    if (landing) landing.classList.add('hidden');
+    if (predictor) predictor.classList.remove('active');
+    if (calc) calc.classList.remove('active');
+    if (settings) settings.classList.add('active');
+    // 把当前 profile 状态填入设置页表单
+    const nicknameInput = document.getElementById('settings-nickname');
+    if (nicknameInput) nicknameInput.value = profile.nickname;
+    updateSettingsAvatarPreview();
+    const colorInput = document.getElementById('settings-bg-color');
+    if (colorInput && profile.bgType === 'color') colorInput.value = profile.bgValue;
+  }
+
+  function updateSettingsAvatarPreview() {
+    const preview = document.getElementById('settings-avatar-preview');
+    if (!preview) return;
+    if (profile.avatar) {
+      preview.style.backgroundImage = 'url(' + profile.avatar + ')';
+      preview.textContent = '';
+    } else {
+      preview.style.backgroundImage = '';
+      const firstChar = profile.nickname ? profile.nickname.charAt(0) : '?';
+      preview.textContent = firstChar;
+    }
+  }
+
+  // 图片转 base64（带格式/大小校验）
+  function readImageFile(file, maxSize, allowedTypes, onSuccess, onError) {
+    if (!file) return;
+    // 校验类型
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    if (allowedTypes.indexOf(file.type) < 0 && validExts.indexOf(ext) < 0) {
+      onError('不支持的格式，请使用 jpg/png/gif/webp/svg');
+      return;
+    }
+    // 校验大小
+    if (file.size > maxSize) {
+      const maxKB = Math.round(maxSize / 1024);
+      onError('文件过大（>' + maxKB + 'KB），请压缩后上传');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) { onSuccess(e.target.result); };
+    reader.onerror = function () { onError('文件读取失败'); };
+    reader.readAsDataURL(file);
+  }
+
+  function initSettings() {
+    // 保存昵称
+    const saveNicknameBtn = document.getElementById('btn-save-nickname');
+    const nicknameInput = document.getElementById('settings-nickname');
+    if (saveNicknameBtn && nicknameInput) {
+      saveNicknameBtn.addEventListener('click', function () {
+        let nickname = (nicknameInput.value || '').trim();
+        if (!nickname) nickname = '访客';
+        if (nickname.length > 20) nickname = nickname.slice(0, 20);
+        profile.nickname = nickname;
+        saveProfile();
+        updateTopbar();
+        updateSettingsAvatarPreview();
+        showToast('昵称已更新：' + nickname);
+      });
+    }
+
+    // 头像上传
+    const avatarInput = document.getElementById('settings-avatar-input');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        readImageFile(file, 200 * 1024, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+          function (base64) {
+            profile.avatar = base64;
+            saveProfile();
+            updateTopbar();
+            updateSettingsAvatarPreview();
+            showToast('头像已更新');
+          },
+          function (errMsg) {
+            showToast(errMsg);
+          }
+        );
+        this.value = '';  // 允许重复选同一文件
+      });
+    }
+
+    // 清除头像
+    const clearAvatarBtn = document.getElementById('btn-clear-avatar');
+    if (clearAvatarBtn) {
+      clearAvatarBtn.addEventListener('click', function () {
+        profile.avatar = '';
+        saveProfile();
+        updateTopbar();
+        updateSettingsAvatarPreview();
+        showToast('头像已清除');
+      });
+    }
+
+    // 背景图片上传
+    const bgImageInput = document.getElementById('settings-bg-image-input');
+    if (bgImageInput) {
+      bgImageInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        readImageFile(file, 1024 * 1024, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+          function (base64) {
+            profile.bgType = 'image';
+            profile.bgValue = base64;
+            saveProfile();
+            applyBackground();
+            showToast('背景图片已应用');
+          },
+          function (errMsg) {
+            showToast(errMsg);
+          }
+        );
+        this.value = '';
+      });
+    }
+
+    // 背景颜色应用
+    const applyBgColorBtn = document.getElementById('btn-apply-bg-color');
+    const bgColorInput = document.getElementById('settings-bg-color');
+    if (applyBgColorBtn && bgColorInput) {
+      applyBgColorBtn.addEventListener('click', function () {
+        const color = bgColorInput.value;
+        profile.bgType = 'color';
+        profile.bgValue = color;
+        saveProfile();
+        applyBackground();
+        showToast('背景颜色已应用：' + color);
+      });
+    }
+
+    // 恢复默认背景
+    const resetBgBtn = document.getElementById('btn-reset-bg');
+    if (resetBgBtn) {
+      resetBgBtn.addEventListener('click', function () {
+        profile.bgType = '';
+        profile.bgValue = '';
+        saveProfile();
+        applyBackground();
+        showToast('已恢复默认背景');
+      });
+    }
+  }
+
+  function applyBackground() {
+    if (profile.bgType === 'image' && profile.bgValue) {
+      document.body.style.background = 'url(' + profile.bgValue + ') center center / cover no-repeat #1a1a2e fixed';
+    } else if (profile.bgType === 'color' && profile.bgValue) {
+      document.body.style.background = profile.bgValue;
+    } else {
+      document.body.style.background = '';
+    }
+  }
+
+  // ============================================================
   // Part 1: 输入解析与校验 / Input Parsing & Validation
   // ============================================================
 
@@ -1283,18 +1570,22 @@
     const landing = document.getElementById('landing-page');
     const predictor = document.getElementById('predictor-page');
     const calc = document.getElementById('calculator-page');
+    const settings = document.getElementById('settings-page');
     if (landing) landing.classList.remove('hidden');
     if (predictor) predictor.classList.remove('active');
     if (calc) calc.classList.remove('active');
+    if (settings) settings.classList.remove('active');
   }
 
   function showPredictor() {
     const landing = document.getElementById('landing-page');
     const predictor = document.getElementById('predictor-page');
     const calc = document.getElementById('calculator-page');
+    const settings = document.getElementById('settings-page');
     if (landing) landing.classList.add('hidden');
     if (predictor) predictor.classList.add('active');
     if (calc) calc.classList.remove('active');
+    if (settings) settings.classList.remove('active');
     // 触发画布重绘
     setTimeout(function () {
       if (typeof resizeCanvases === 'function') resizeCanvases();
@@ -1306,9 +1597,11 @@
     const landing = document.getElementById('landing-page');
     const predictor = document.getElementById('predictor-page');
     const calc = document.getElementById('calculator-page');
+    const settings = document.getElementById('settings-page');
     if (landing) landing.classList.add('hidden');
     if (predictor) predictor.classList.remove('active');
     if (calc) calc.classList.add('active');
+    if (settings) settings.classList.remove('active');
   }
 
   function initPageSwitching() {
@@ -1316,10 +1609,14 @@
     const btnCalc = document.getElementById('btn-enter-calculator');
     const btnBackPredict = document.getElementById('btn-back-home-predict');
     const btnBackCalc = document.getElementById('btn-back-home-calc');
+    const btnSettings = document.getElementById('btn-enter-settings');
+    const btnBackSettings = document.getElementById('btn-back-home-settings');
     if (btnPredictor) btnPredictor.addEventListener('click', showPredictor);
     if (btnCalc) btnCalc.addEventListener('click', showCalculator);
     if (btnBackPredict) btnBackPredict.addEventListener('click', showLanding);
     if (btnBackCalc) btnBackCalc.addEventListener('click', showLanding);
+    if (btnSettings) btnSettings.addEventListener('click', showSettings);
+    if (btnBackSettings) btnBackSettings.addEventListener('click', showLanding);
   }
 
   // ============================================================
@@ -1387,6 +1684,17 @@
     // 计算器与页面切换初始化 / calculator and page switching init
     initCalculator();
     initPageSwitching();
+
+    // 用户档案与设置初始化 / user profile and settings init
+    const hasProfile = loadProfile();
+    updateTopbar();
+    applyBackground();
+    initRegisterModal();
+    initTopbar();
+    initSettings();
+    if (!hasProfile) {
+      showRegisterModal();
+    }
   }
 
   // ============================================================

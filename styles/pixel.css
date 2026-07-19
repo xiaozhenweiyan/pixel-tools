@@ -1106,3 +1106,201 @@ footer.pixel-panel p {
   padding: 12px !important;
   text-align: left;
 }
+
+/* ============================================================
+   浮动返回按钮 / Floating Back Button
+   ============================================================ */
+.floating-back-btn {
+  position: fixed;
+  top: 56px;  /* 让出顶栏空间 */
+  right: 16px;
+  z-index: 9999;
+  padding: 8px 14px;
+  background: #1a1a2e;
+  color: #ffd700;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000000;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.floating-back-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #000000;
+}
+.floating-back-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 #000000;
+}
+
+/* ============================================================
+   注册弹窗 / Register Modal
+   ============================================================ */
+.register-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.register-modal-content {
+  max-width: 420px;
+  width: 90%;
+  padding: 24px;
+  text-align: center;
+}
+.register-modal-content h2 {
+  color: #ffd700;
+  margin-top: 0;
+}
+.register-modal-content p {
+  color: #ffffff;
+  margin: 12px 0;
+}
+.register-modal-content .pixel-input {
+  width: 100%;
+  margin: 12px 0;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 18px;
+}
+.register-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* ============================================================
+   顶栏 / Topbar
+   ============================================================ */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: #1a1a2e;
+  border-bottom: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 9998;
+  box-sizing: border-box;
+  font-family: 'Courier New', monospace;
+}
+.topbar-left, .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar-avatar {
+  width: 32px;
+  height: 32px;
+  background: #4a4a6e;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.topbar-nickname {
+  color: #ffd700;
+  font-size: 14px;
+  font-weight: bold;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar-btn {
+  padding: 4px 12px !important;
+  font-size: 13px !important;
+}
+body {
+  padding-top: 48px;
+}
+
+/* ============================================================
+   设置页面 / Settings Page
+   ============================================================ */
+.settings-page {
+  display: none;
+}
+.settings-page.active {
+  display: block;
+}
+.settings-layout {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 2px dashed #4a4a6e;
+  border-radius: 4px;
+}
+.settings-label {
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+}
+.settings-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-avatar-preview {
+  width: 64px;
+  height: 64px;
+  background: #4a4a6e;
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  color: #ffd700;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.settings-file-input {
+  flex: 1;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+}
+.settings-color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-color-input {
+  width: 60px;
+  height: 36px;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  background: #1a1a2e;
+  cursor: pointer;
+  padding: 2px;
+}

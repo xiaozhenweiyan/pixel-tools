@@ -7,6 +7,31 @@
   <link rel="stylesheet" href="styles/pixel.css">
 </head>
 <body>
+  <!-- 注册弹窗 / Register Modal -->
+  <div id="register-modal" class="register-modal" style="display:none;">
+    <div class="register-modal-content pixel-panel">
+      <h2>欢迎来到数学学习网站</h2>
+      <p>请输入你的昵称（可跳过）</p>
+      <input type="text" id="register-nickname" class="pixel-input" maxlength="20" placeholder="访客">
+      <div class="register-modal-buttons">
+        <button id="register-skip" class="pixel-btn">跳过</button>
+        <button id="register-confirm" class="pixel-btn">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 顶栏 / Topbar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-left">
+      <div class="topbar-avatar" id="topbar-avatar">访</div>
+      <span class="topbar-nickname" id="topbar-nickname">访客</span>
+    </div>
+    <div class="topbar-right">
+      <button id="btn-settings" class="pixel-btn topbar-btn">设置</button>
+      <button id="btn-logout" class="pixel-btn topbar-btn">退出</button>
+    </div>
+  </div>
+
   <!-- 数学学习网站落地页 / Landing Page -->
   <div id="landing-page" class="landing-page">
     <div class="landing-content">
@@ -48,6 +73,19 @@
             <div class="landing-card-desc">像素风计算器，支持四则运算与表达式求值</div>
           </div>
         </button>
+        <button class="landing-card" id="btn-enter-settings">
+          <div class="landing-card-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="10" stroke="#ffd700" stroke-width="3" fill="#1a1a2e"/>
+              <circle cx="24" cy="24" r="3" fill="#ffd700"/>
+              <path d="M24 4 L24 12 M24 36 L24 44 M4 24 L12 24 M36 24 L44 24 M10 10 L16 16 M32 32 L38 38 M10 38 L16 32 M32 16 L38 10" stroke="#ffd700" stroke-width="3" stroke-linecap="square"/>
+            </svg>
+          </div>
+          <div class="landing-card-body">
+            <div class="landing-card-title">个人系统</div>
+            <div class="landing-card-desc">修改昵称、上传头像、自定义背景</div>
+          </div>
+        </button>
         <!-- 后续可在此添加更多功能卡片，如学习系统 -->
       </div>
     </div>
@@ -55,10 +93,10 @@
   </div>
 
   <div id="predictor-page" class="predictor-page">
+  <button class="floating-back-btn" id="btn-back-home-predict">← 返回首页</button>
   <header class="pixel-panel" style="text-align:center; margin:20px;">
     <h1 class="pixel-title">像素预测器 PIXEL PREDICTOR</h1>
     <p class="pixel-subtitle">输入数字序列 · 40 种数学方法预测 · 复古深空像素风</p>
-    <button id="btn-back-home-predict" class="pixel-btn" style="margin-top:10px;">返回首页</button>
   </header>
 
   <main class="layout">
@@ -182,6 +220,7 @@
   </div><!-- end predictor-page -->
 
   <div id="calculator-page" class="calculator-page">
+    <button class="floating-back-btn" id="btn-back-home-calc">← 返回首页</button>
     <header class="pixel-panel" style="text-align:center; margin:20px;">
       <h1 class="pixel-title">像素计算器 PIXEL CALCULATOR</h1>
       <p class="pixel-subtitle">按键或键盘输入 · 支持四则运算 · 复古深空像素风</p>
@@ -221,8 +260,52 @@
         <input type="text" id="calc-input" class="pixel-input calc-input" placeholder="输入表达式，如 1+2*3，按回车求值" autocomplete="off">
       </div>
     </main>
+  </div>
+
+  <div id="settings-page" class="settings-page">
+    <header class="pixel-panel" style="text-align:center; margin:20px;">
+      <h1 class="pixel-title">个人设置 PIXEL SETTINGS</h1>
+      <p class="pixel-subtitle">昵称 · 头像 · 背景 · 临时账号（关闭浏览器自动销毁）</p>
+    </header>
+    <main class="settings-layout">
+      <div class="pixel-panel settings-panel">
+        <h2>个人设置</h2>
+
+        <div class="settings-section">
+          <label class="settings-label">昵称</label>
+          <input type="text" id="settings-nickname" class="pixel-input" maxlength="20" placeholder="输入新昵称">
+          <button id="btn-save-nickname" class="pixel-btn">保存昵称</button>
+        </div>
+
+        <div class="settings-section">
+          <label class="settings-label">头像（≤200KB，jpg/png/gif/webp/svg）</label>
+          <div class="settings-avatar-row">
+            <div class="settings-avatar-preview" id="settings-avatar-preview">?</div>
+            <input type="file" id="settings-avatar-input" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" class="settings-file-input">
+          </div>
+          <button id="btn-clear-avatar" class="pixel-btn">清除头像</button>
+        </div>
+
+        <div class="settings-section">
+          <label class="settings-label">背景图片（≤1MB，jpg/png/gif/webp/svg）</label>
+          <input type="file" id="settings-bg-image-input" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" class="settings-file-input">
+        </div>
+
+        <div class="settings-section">
+          <label class="settings-label">背景颜色</label>
+          <div class="settings-color-row">
+            <input type="color" id="settings-bg-color" value="#1a1a2e" class="settings-color-input">
+            <button id="btn-apply-bg-color" class="pixel-btn">应用颜色</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <button id="btn-reset-bg" class="pixel-btn">恢复默认背景</button>
+        </div>
+      </div>
+    </main>
     <footer class="pixel-panel" style="text-align:center; margin:20px;">
-      <button id="btn-back-home-calc" class="pixel-btn">返回首页</button>
+      <button id="btn-back-home-settings" class="pixel-btn">返回首页</button>
     </footer>
   </div>
 
