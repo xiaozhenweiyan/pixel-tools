@@ -73,19 +73,6 @@
             <div class="landing-card-desc">像素风计算器，支持四则运算与表达式求值</div>
           </div>
         </button>
-        <button class="landing-card" id="btn-enter-settings">
-          <div class="landing-card-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="10" stroke="#ffd700" stroke-width="3" fill="#1a1a2e"/>
-              <circle cx="24" cy="24" r="3" fill="#ffd700"/>
-              <path d="M24 4 L24 12 M24 36 L24 44 M4 24 L12 24 M36 24 L44 24 M10 10 L16 16 M32 32 L38 38 M10 38 L16 32 M32 16 L38 10" stroke="#ffd700" stroke-width="3" stroke-linecap="square"/>
-            </svg>
-          </div>
-          <div class="landing-card-body">
-            <div class="landing-card-title">个人系统</div>
-            <div class="landing-card-desc">修改昵称、上传头像、自定义背景</div>
-          </div>
-        </button>
         <!-- 后续可在此添加更多功能卡片，如学习系统 -->
       </div>
     </div>
@@ -232,30 +219,39 @@
           <div class="calc-history" id="calc-history">— 等待输入 —</div>
           <div class="calc-current" id="calc-current">0</div>
         </div>
-        <div class="calc-keys">
-          <button class="pixel-btn calc-key" data-key="7">7</button>
-          <button class="pixel-btn calc-key" data-key="8">8</button>
-          <button class="pixel-btn calc-key" data-key="9">9</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="/">÷</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="C">C</button>
+        <div class="calc-bottom-row">
+          <div class="calc-keys">
+            <button class="pixel-btn calc-key" data-key="7">7</button>
+            <button class="pixel-btn calc-key" data-key="8">8</button>
+            <button class="pixel-btn calc-key" data-key="9">9</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="/">÷</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="C">C</button>
 
-          <button class="pixel-btn calc-key" data-key="4">4</button>
-          <button class="pixel-btn calc-key" data-key="5">5</button>
-          <button class="pixel-btn calc-key" data-key="6">6</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="*">×</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="(">(</button>
+            <button class="pixel-btn calc-key" data-key="4">4</button>
+            <button class="pixel-btn calc-key" data-key="5">5</button>
+            <button class="pixel-btn calc-key" data-key="6">6</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="*">×</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="(">(</button>
 
-          <button class="pixel-btn calc-key" data-key="1">1</button>
-          <button class="pixel-btn calc-key" data-key="2">2</button>
-          <button class="pixel-btn calc-key" data-key="3">3</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="-">−</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key=")">)</button>
+            <button class="pixel-btn calc-key" data-key="1">1</button>
+            <button class="pixel-btn calc-key" data-key="2">2</button>
+            <button class="pixel-btn calc-key" data-key="3">3</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="-">−</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key=")">)</button>
 
-          <button class="pixel-btn calc-key" data-key="0">0</button>
-          <button class="pixel-btn calc-key" data-key=".">.</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="+">+</button>
-          <button class="pixel-btn calc-key calc-key-eq" data-key="=">=</button>
-          <button class="pixel-btn calc-key calc-key-op" data-key="back">⌫</button>
+            <button class="pixel-btn calc-key" data-key="0">0</button>
+            <button class="pixel-btn calc-key" data-key=".">.</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="+">+</button>
+            <button class="pixel-btn calc-key calc-key-eq" data-key="=">=</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="back">⌫</button>
+            <button class="pixel-btn calc-key calc-key-op" data-key="sqrt" style="grid-column: span 5;">√</button>
+          </div>
+          <div class="calc-steps-wrap">
+            <div class="calc-steps-title">运算过程</div>
+            <div class="calc-steps" id="calc-steps">
+              <div class="calc-step-empty">— 等待计算 —</div>
+            </div>
+          </div>
         </div>
         <input type="text" id="calc-input" class="pixel-input calc-input" placeholder="输入表达式，如 1+2*3，按回车求值" autocomplete="off">
       </div>
@@ -308,6 +304,14 @@
       <button id="btn-back-home-settings" class="pixel-btn">返回首页</button>
     </footer>
   </div>
+
+  <button class="floating-settings-btn" id="btn-floating-settings" title="个人系统" aria-label="个人系统">
+    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="10" stroke="#ffd700" stroke-width="3" fill="#1a1a2e"/>
+      <circle cx="24" cy="24" r="3" fill="#ffd700"/>
+      <path d="M24 4 L24 12 M24 36 L24 44 M4 24 L12 24 M36 24 L44 24 M10 10 L16 16 M32 32 L38 38 M10 38 L16 32 M32 16 L38 10" stroke="#ffd700" stroke-width="3" stroke-linecap="square"/>
+    </svg>
+  </button>
 
   <div id="toast" class="pixel-panel pixel-toast" style="display:none;"></div>
 

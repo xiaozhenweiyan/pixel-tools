@@ -87,8 +87,11 @@
     try {
       sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
     } catch (e) {
-      // 容量溢出（base64 太大）时提示
-      showToast('存储空间不足，请用更小的图片');
+      if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+        showToast('图片过大，请用更小的图片');
+      } else {
+        showToast('存储失败：' + (e.message || '未知错误'));
+      }
     }
   }
 
@@ -181,6 +184,42 @@
     });
   }
 
+  function initTopbarAutoHide() {
+    const topbar = document.getElementById('topbar');
+    if (!topbar) return;
+    let hideTimer = null;
+
+    // 鼠标移到顶栏内时取消隐藏计时器并显示
+    topbar.addEventListener('mouseenter', function () {
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      topbar.classList.add('visible');
+    });
+    topbar.addEventListener('mouseleave', function () {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () {
+        topbar.classList.remove('visible');
+      }, 300);
+    });
+
+    // 监听整个文档的鼠标移动
+    document.addEventListener('mousemove', function (e) {
+      const y = e.clientY;
+      if (y <= 6) {
+        // 鼠标移到页面顶部，显示顶栏
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+        topbar.classList.add('visible');
+      } else if (y > 54) {
+        // 鼠标离开顶栏区域，延迟隐藏
+        if (!topbar.matches(':hover')) {
+          if (hideTimer) clearTimeout(hideTimer);
+          hideTimer = setTimeout(function () {
+            topbar.classList.remove('visible');
+          }, 300);
+        }
+      }
+    });
+  }
+
   // ============================================================
   // 设置页面 / Settings Page
   // ============================================================
@@ -237,6 +276,75 @@
     reader.readAsDataURL(file);
   }
 
+  /**
+   * compressImage(file, maxDim, isAvatar) → Promise<string>
+   * 图片压缩：
+   *   - 文件 ≤ 500KB：直接 FileReader.readAsDataURL
+   *   - 文件 > 500KB：用 Image + canvas 压缩
+   *     - 头像（isAvatar=true）：256×256 居中裁剪，JPEG 0.85
+   *     - 背景（isAvatar=false）：最长边 ≤ maxDim 保持比例，JPEG 0.8
+   */
+  function compressImage(file, maxDim, isAvatar) {
+    return new Promise(function (resolve, reject) {
+      if (!file) { reject(new Error('无文件')); return; }
+
+      // 小文件直接用
+      if (file.size <= 500 * 1024) {
+        const reader = new FileReader();
+        reader.onload = function (e) { resolve(e.target.result); };
+        reader.onerror = function () { reject(new Error('文件读取失败')); };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // 大文件用 canvas 压缩
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (isAvatar) {
+              // 头像：256×256 居中裁剪
+              canvas.width = 256;
+              canvas.height = 256;
+              const srcSize = Math.min(img.width, img.height);
+              const sx = (img.width - srcSize) / 2;
+              const sy = (img.height - srcSize) / 2;
+              ctx.drawImage(img, sx, sy, srcSize, srcSize, 0, 0, 256, 256);
+            } else {
+              // 背景：保持比例，最长边 ≤ maxDim
+              let w = img.width, h = img.height;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round(h * maxDim / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round(w * maxDim / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              ctx.drawImage(img, 0, 0, w, h);
+            }
+
+            const base64 = canvas.toDataURL('image/jpeg', isAvatar ? 0.85 : 0.8);
+            resolve(base64);
+          } catch (err) {
+            reject(new Error('图片处理失败：' + err.message));
+          }
+        };
+        img.onerror = function () { reject(new Error('图片加载失败')); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function () { reject(new Error('文件读取失败')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function initSettings() {
     // 保存昵称
     const saveNicknameBtn = document.getElementById('btn-save-nickname');
@@ -260,19 +368,47 @@
       avatarInput.addEventListener('change', function () {
         const file = this.files && this.files[0];
         if (!file) return;
-        readImageFile(file, 200 * 1024, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
-          function (base64) {
-            profile.avatar = base64;
+
+        // 校验格式（不限大小，由 compressImage 处理）
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        const validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (allowedTypes.indexOf(file.type) < 0 && validExts.indexOf(ext) < 0) {
+          showToast('不支持的格式，请使用 jpg/png/gif/webp/svg');
+          this.value = '';
+          return;
+        }
+
+        // SVG 不压缩（直接读取）
+        if (file.type === 'image/svg+xml' || ext === 'svg') {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            profile.avatar = e.target.result;
             saveProfile();
             updateTopbar();
             updateSettingsAvatarPreview();
             showToast('头像已更新');
-          },
-          function (errMsg) {
-            showToast(errMsg);
-          }
-        );
-        this.value = '';  // 允许重复选同一文件
+          };
+          reader.readAsDataURL(file);
+          this.value = '';
+          return;
+        }
+
+        // 大文件显示压缩提示
+        if (file.size > 500 * 1024) {
+          showToast('正在压缩图片...');
+        }
+
+        compressImage(file, 256, true).then(function (base64) {
+          profile.avatar = base64;
+          saveProfile();
+          updateTopbar();
+          updateSettingsAvatarPreview();
+          showToast('头像已更新');
+        }).catch(function (err) {
+          showToast(err.message || '头像处理失败');
+        });
+        this.value = '';
       });
     }
 
@@ -294,18 +430,44 @@
       bgImageInput.addEventListener('change', function () {
         const file = this.files && this.files[0];
         if (!file) return;
-        readImageFile(file, 1024 * 1024, ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
-          function (base64) {
+
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        const validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (allowedTypes.indexOf(file.type) < 0 && validExts.indexOf(ext) < 0) {
+          showToast('不支持的格式，请使用 jpg/png/gif/webp/svg');
+          this.value = '';
+          return;
+        }
+
+        // SVG 不压缩
+        if (file.type === 'image/svg+xml' || ext === 'svg') {
+          const reader = new FileReader();
+          reader.onload = function (e) {
             profile.bgType = 'image';
-            profile.bgValue = base64;
+            profile.bgValue = e.target.result;
             saveProfile();
             applyBackground();
             showToast('背景图片已应用');
-          },
-          function (errMsg) {
-            showToast(errMsg);
-          }
-        );
+          };
+          reader.readAsDataURL(file);
+          this.value = '';
+          return;
+        }
+
+        if (file.size > 500 * 1024) {
+          showToast('正在压缩图片...');
+        }
+
+        compressImage(file, 1920, false).then(function (base64) {
+          profile.bgType = 'image';
+          profile.bgValue = base64;
+          saveProfile();
+          applyBackground();
+          showToast('背景图片已应用');
+        }).catch(function (err) {
+          showToast(err.message || '背景处理失败');
+        });
         this.value = '';
       });
     }
@@ -1445,9 +1607,10 @@
       .replace(/×/g, '*')
       .replace(/÷/g, '/')
       .replace(/−/g, '-')
-      .replace(/\s+/g, '');
-    // 白名单校验
-    if (!/^[-+*/().0-9]+$/.test(cleaned)) {
+      .replace(/\s+/g, '')
+      .replace(/sqrt\(/g, 'Math.sqrt(');
+    // 白名单校验：允许数字、运算符、括号、点、Math.sqrt
+    if (!/^[-+*/().0-9Mathsqrt]+$/.test(cleaned)) {
       return { ok: false, error: '包含非法字符' };
     }
     // 不允许连续运算符结尾
@@ -1497,6 +1660,11 @@
   function calcAppendKey(key) {
     const input = document.getElementById('calc-input');
     if (!input) return;
+    if (key === 'sqrt') {
+      input.value += 'sqrt(';
+      calcUpdateCurrent();
+      return;
+    }
     if (key === 'C') {
       input.value = '';
     } else if (key === 'back') {
@@ -1516,6 +1684,144 @@
   }
 
   /**
+   * computeStepsWithTrace(expr) → { steps: string[], finalValue: number, error: string|null }
+   * 生成分步化简过程：
+   *   1. 先处理 sqrt(...)：递归求值 sqrt 内的表达式，替换为结果
+   *   2. 找最内层括号 (...)，求值替换
+   *   3. 无括号时按优先级：先乘除后加减，求值最左边的最高级运算替换
+   *   4. 重复直到只剩一个数字
+   */
+  function computeStepsWithTrace(expr) {
+    const steps = [expr];
+    let current = expr;
+    const maxIter = 50;  // 防死循环
+
+    for (let iter = 0; iter < maxIter; iter++) {
+      // 检查是否只剩一个数字
+      if (/^-?\d+(\.\d+)?$/.test(current.trim())) break;
+
+      // 1. 处理 sqrt(...)
+      const sqrtMatch = current.match(/sqrt\(([^()]+)\)/);
+      if (sqrtMatch) {
+        const inner = sqrtMatch[1];
+        const evalRes = calculateExpr(inner);
+        if (!evalRes.ok) return { steps: steps, finalValue: null, error: '根号内表达式错误' };
+        const replacement = String(evalRes.value);
+        current = current.replace(sqrtMatch[0], replacement);
+        steps.push(current);
+        continue;
+      }
+
+      // 2. 处理最内层括号 (...)
+      const parenMatch = current.match(/\(([^()]+)\)/);
+      if (parenMatch) {
+        const inner = parenMatch[1];
+        const evalRes = calculateExpr(inner);
+        if (!evalRes.ok) return { steps: steps, finalValue: null, error: '括号内表达式错误' };
+        const replacement = String(evalRes.value);
+        // 处理负数替换：如 (-3) 替换为 -3，但 (3)*(-3) 需保留括号
+        // 简化：若结果是负数，在外面包括号
+        if (evalRes.value < 0 && parenMatch.index > 0) {
+          const prevChar = current.charAt(parenMatch.index - 1);
+          if (prevChar !== '(' && prevChar !== '+' && prevChar !== '-' && prevChar !== '*' && prevChar !== '/') {
+            current = current.slice(0, parenMatch.index) + '(' + replacement + ')' + current.slice(parenMatch.index + parenMatch[0].length);
+          } else {
+            current = current.slice(0, parenMatch.index) + replacement + current.slice(parenMatch.index + parenMatch[0].length);
+          }
+        } else {
+          current = current.slice(0, parenMatch.index) + replacement + current.slice(parenMatch.index + parenMatch[0].length);
+        }
+        steps.push(current);
+        continue;
+      }
+
+      // 3. 无括号，按优先级求值
+      // 3a. 先求 * 和 /
+      const mulDivMatch = current.match(/(-?\d+(?:\.\d+)?)\s*([*/])\s*(-?\d+(?:\.\d+)?)/);
+      if (mulDivMatch) {
+        const left = parseFloat(mulDivMatch[1]);
+        const op = mulDivMatch[2];
+        const right = parseFloat(mulDivMatch[3]);
+        let result;
+        if (op === '*') result = left * right;
+        else result = left / right;
+        // 防止浮点误差：若结果接近整数则吸附
+        if (Math.abs(result - Math.round(result)) < 1e-9) result = Math.round(result);
+        current = current.replace(mulDivMatch[0], String(result));
+        steps.push(current);
+        continue;
+      }
+
+      // 3b. 再求 + 和 -（注意要避免把负号当作减号）
+      // 匹配 A+B 或 A-B，但不能匹配开头负号
+      const addSubMatch = current.match(/(-?\d+(?:\.\d+)?)\s*([+-])\s*(-?\d+(?:\.\d+)?)/);
+      if (addSubMatch) {
+        // 确保不是把 "5-3" 中的 - 误判，且不匹配开头
+        const matchStr = addSubMatch[0];
+        const matchIdx = current.indexOf(matchStr);
+        // 如果匹配的是整个开头且首字符是 -，跳过避免死循环
+        if (matchIdx === 0 && matchStr.charAt(0) === '-') {
+          // 这种情况说明整个表达式就是 -N，应结束
+          break;
+        }
+        const left = parseFloat(addSubMatch[1]);
+        const op = addSubMatch[2];
+        const right = parseFloat(addSubMatch[3]);
+        let result;
+        if (op === '+') result = left + right;
+        else result = left - right;
+        if (Math.abs(result - Math.round(result)) < 1e-9) result = Math.round(result);
+        current = current.replace(matchStr, String(result));
+        steps.push(current);
+        continue;
+      }
+
+      // 无法继续化简，退出
+      break;
+    }
+
+    // 最终求值
+    const finalRes = calculateExpr(current);
+    if (!finalRes.ok) return { steps: steps, finalValue: null, error: '表达式错误' };
+
+    return { steps: steps, finalValue: finalRes.value, error: null };
+  }
+
+  function showCalcSteps(steps, finalValue, error) {
+    const container = document.getElementById('calc-steps');
+    if (!container) return;
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    if (error) {
+      const errDiv = document.createElement('div');
+      errDiv.className = 'calc-step-error calc-step-line';
+      errDiv.textContent = '错误：' + error;
+      container.appendChild(errDiv);
+      return;
+    }
+
+    if (!steps || steps.length === 0) return;
+
+    for (let i = 0; i < steps.length; i++) {
+      const line = document.createElement('div');
+      line.className = 'calc-step-line';
+      line.textContent = steps[i];
+      container.appendChild(line);
+    }
+
+    // 最终结果行
+    if (finalValue !== null && finalValue !== undefined) {
+      const finalLine = document.createElement('div');
+      finalLine.className = 'calc-step-line calc-step-final';
+      finalLine.textContent = '= ' + formatCalcResult(finalValue);
+      container.appendChild(finalLine);
+    }
+
+    // 滚动到底部
+    container.scrollTop = container.scrollHeight;
+  }
+
+  /**
    * calcEvaluate()
    * 求值并把结果加入历史。
    */
@@ -1532,9 +1838,13 @@
       if (history) history.textContent = expr + ' =';
       current.textContent = formatted;
       input.value = formatted;
+      // 生成并显示运算过程
+      const trace = computeStepsWithTrace(expr);
+      showCalcSteps(trace.steps, trace.finalValue, trace.error);
     } else {
       if (history) history.textContent = expr;
       current.textContent = '错误：' + (result.error || '无效');
+      showCalcSteps([], null, result.error || '无效');
     }
   }
 
@@ -1609,13 +1919,13 @@
     const btnCalc = document.getElementById('btn-enter-calculator');
     const btnBackPredict = document.getElementById('btn-back-home-predict');
     const btnBackCalc = document.getElementById('btn-back-home-calc');
-    const btnSettings = document.getElementById('btn-enter-settings');
     const btnBackSettings = document.getElementById('btn-back-home-settings');
+    const btnFloatingSettings = document.getElementById('btn-floating-settings');
     if (btnPredictor) btnPredictor.addEventListener('click', showPredictor);
     if (btnCalc) btnCalc.addEventListener('click', showCalculator);
     if (btnBackPredict) btnBackPredict.addEventListener('click', showLanding);
     if (btnBackCalc) btnBackCalc.addEventListener('click', showLanding);
-    if (btnSettings) btnSettings.addEventListener('click', showSettings);
+    if (btnFloatingSettings) btnFloatingSettings.addEventListener('click', showSettings);
     if (btnBackSettings) btnBackSettings.addEventListener('click', showLanding);
   }
 
@@ -1691,6 +2001,7 @@
     applyBackground();
     initRegisterModal();
     initTopbar();
+    initTopbarAutoHide();
     initSettings();
     if (!hasProfile) {
       showRegisterModal();

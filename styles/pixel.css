@@ -1107,12 +1107,79 @@ footer.pixel-panel p {
   text-align: left;
 }
 
+/* 运算过程显示 */
+.calc-steps-wrap {
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  background: #0d0d1f;
+  padding: 12px;
+}
+.calc-steps-title {
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.calc-steps {
+  min-height: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #ffffff;
+}
+.calc-step-line {
+  padding: 4px 8px;
+  border-bottom: 1px dashed #4a4a6e;
+  word-break: break-all;
+}
+.calc-step-line:last-child {
+  border-bottom: none;
+}
+.calc-step-final {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 16px;
+}
+.calc-step-error {
+  color: #ff4500;
+  font-weight: bold;
+}
+.calc-step-empty {
+  color: #8888aa;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* 桌面端：按键和过程框并排 */
+.calc-bottom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .calc-bottom-row {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .calc-bottom-row > * {
+    flex: 1;
+  }
+}
+@media (max-width: 767px) {
+  .calc-panel {
+    flex-direction: column;
+  }
+}
+
 /* ============================================================
    浮动返回按钮 / Floating Back Button
    ============================================================ */
 .floating-back-btn {
   position: fixed;
-  top: 56px;  /* 让出顶栏空间 */
+  top: 12px;  /* 让出顶栏空间 */
   right: 16px;
   z-index: 9999;
   padding: 8px 14px;
@@ -1134,6 +1201,43 @@ footer.pixel-panel p {
 .floating-back-btn:active {
   transform: translate(2px, 2px);
   box-shadow: 0 0 0 #000000;
+}
+
+.floating-settings-btn {
+  position: fixed;
+  top: 12px;
+  right: 120px;
+  z-index: 9999;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: #1a1a2e;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.floating-settings-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #000000;
+}
+.floating-settings-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 #000000;
+}
+.floating-settings-btn svg {
+  animation: gear-spin 4s linear infinite;
+}
+@keyframes gear-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floating-settings-btn svg { animation: none; }
 }
 
 /* ============================================================
@@ -1181,7 +1285,7 @@ footer.pixel-panel p {
    ============================================================ */
 .topbar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: -48px; left: 0; right: 0;
   height: 48px;
   background: #1a1a2e;
   border-bottom: 3px solid #ffffff;
@@ -1192,7 +1296,9 @@ footer.pixel-panel p {
   z-index: 9998;
   box-sizing: border-box;
   font-family: 'Courier New', monospace;
+  transition: top 0.3s ease;
 }
+.topbar.visible { top: 0; }
 .topbar-left, .topbar-right {
   display: flex;
   align-items: center;
