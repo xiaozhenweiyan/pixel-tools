@@ -648,6 +648,36 @@
   }
 
   // ============================================================
+  // 浮动语言切换按钮 / Floating Language Toggle Button
+  // ============================================================
+  function updateFloatingLangBtn() {
+    const btn = document.getElementById('floating-lang-btn');
+    const text = document.getElementById('floating-lang-text');
+    if (!btn || !text || !window.i18n) return;
+    const lang = i18n.getCurrentLang();
+    text.textContent = lang === 'zh' ? 'EN' : '中';
+    btn.title = lang === 'zh' ? 'Switch to English' : '切换到中文';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  function initFloatingLangBtn() {
+    const btn = document.getElementById('floating-lang-btn');
+    if (!btn || !window.i18n) return;
+
+    updateFloatingLangBtn();
+
+    btn.addEventListener('click', function () {
+      const current = i18n.getCurrentLang();
+      const next = current === 'zh' ? 'en' : 'zh';
+      i18n.setLanguage(next);
+    });
+
+    document.addEventListener('languagechange', function () {
+      updateFloatingLangBtn();
+    });
+  }
+
+  // ============================================================
   // Part 1: 输入解析与校验 / Input Parsing & Validation
   // ============================================================
 
@@ -3038,6 +3068,9 @@
       window.i18n.init();
     }
 
+    // 浮动语言切换按钮 / floating language toggle
+    initFloatingLangBtn();
+
     // 按钮事件 / button listeners
     const btnPredict = document.getElementById('btn-predict');
     const btnReset = document.getElementById('btn-reset');
@@ -3191,16 +3224,13 @@
     if (!landing || !enterBtn) return;
 
     enterBtn.addEventListener('click', function () {
-      landing.classList.add('hidden');
-      // 动画结束后完全移除（保持 DOM 但不可见）
+      showPredictor();
       setTimeout(function () {
-        // 聚焦到输入框
         var textarea = document.getElementById('input-series');
         if (textarea) textarea.focus();
       }, 600);
     });
 
-    // 支持键盘 Enter 进入
     document.addEventListener('keydown', function (e) {
       if (landing.classList.contains('hidden')) return;
       if (e.key === 'Enter' || e.key === ' ') {
