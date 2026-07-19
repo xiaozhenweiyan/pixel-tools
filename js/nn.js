@@ -731,6 +731,176 @@ const neuralNet = (function () {
     });
   }
 
+  // ============================================================
+  // 增量式训练 / Incremental Training
+  //
+  // 与 progressiveTrain 的区别：
+  //   - progressiveTrain 在开始时调用 initWeights() 重置权重
+  //   - incrementalTrain 不调用 initWeights()，保留当前 params（权重），
+  //     在已有权重基础上继续训练
+  //   - 仅当输入层维度发生变化时才重新初始化权重
+  // ============================================================
+  function incrementalTrain(canvas, series, steps, onProgress) {
+    return new Promise(function (resolve) {
+      if (!series || series.length < MIN_INPUT_SIZE + 1) {
+        resolve([]);
+        return;
+      }
+
+      // 动态设置输入层大小 / set input size based on series length
+      // 注意：不调用 initWeights()，保留当前权重做增量训练
+      inputSize = Math.max(MIN_INPUT_SIZE, Math.min(MAX_INPUT_SIZE, series.length - 1));
+      // 如果当前权重维度不匹配新 inputSize，才重新初始化
+      if (!params.W1 || params.W1.length !== inputSize) {
+        initWeights();
+      }
+
+      var norm = normalizeSeries(series);
+      var normData = norm.data;
+
+      // 构建渐进训练任务（与 progressiveTrain 相同）
+      var tasks = [];
+      for (var k = inputSize; k < series.length; k++) {
+        var input = [];
+        for (var i = 0; i < inputSize; i++) {
+          input.push(normData[k - inputSize + i]);
+        }
+        var target = [normData[k]];
+        var actualVal = series[k];
+        tasks.push({ input: input, target: target, actualVal: actualVal, stepIdx: k - inputSize + 1, isAugmented: false });
+      }
+
+      // 数据增强（与 progressiveTrain 相同）
+      for (var augStart = 2; augStart < series.length; augStart++) {
+        for (var augEnd = augStart + 1; augEnd <= series.length; augEnd++) {
+          if (augStart === 0 && augEnd === series.length) continue;
+          var augInput = [];
+          var augWindow = normData.slice(Math.max(0, augEnd - inputSize - 1), augEnd - 1);
+          while (augWindow.length < inputSize) {
+            augWindow.unshift(0);
+          }
+          for (var ai = 0; ai < inputSize; ai++) {
+            augInput.push(augWindow[ai]);
+          }
+          var augTarget = [normData[augEnd - 1]];
+          var augActual = series[augEnd - 1];
+          tasks.push({ input: augInput, target: augTarget, actualVal: augActual, stepIdx: tasks.length + 1, isAugmented: true });
+        }
+      }
+
+      var MAX_AUGMENTED = 20;
+      var originalCount = series.length - inputSize;
+      if (tasks.length > originalCount + MAX_AUGMENTED) {
+        var originalTasks = tasks.slice(0, originalCount);
+        var augmentedTasks = tasks.slice(originalCount);
+        var step = Math.ceil(augmentedTasks.length / MAX_AUGMENTED);
+        var sampledAug = [];
+        for (var s = 0; s < augmentedTasks.length; s += step) {
+          sampledAug.push(augmentedTasks[s]);
+        }
+        tasks = originalTasks.concat(sampledAug);
+      }
+
+      var totalTasks = tasks.length;
+      var currentTask = 0;
+      var lr = LEARNING_RATE;
+      var animFrame = 0;
+      var tolerance = computeAdaptiveTolerance(series);
+      var bestLoss = Infinity;
+      var patienceCounter = 0;
+      var PATIENCE = 200;
+      var DECAY = 0.5;
+      var MIN_LR = 0.001;
+
+      function trainStep() {
+        if (currentTask >= totalTasks) {
+          if (onProgress) onProgress(totalTasks, totalTasks, '增量训练完成，预测中...');
+          var preds = predict(series, steps);
+          drawNetwork(canvas, {
+            pulse: 0.8,
+            inputActivations: new Array(inputSize).fill(0.6),
+            hiddenActivations: new Array(HIDDEN_SIZE).fill(0.5),
+            outputActivations: new Array(OUTPUT_SIZE).fill(0.7),
+            stage: '增量训练完成',
+            loss: 0
+          });
+          resolve(preds);
+          return;
+        }
+
+        var task = tasks[currentTask];
+        var maxEpochs = MAX_EPOCHS_PER_STEP;
+        var epoch = 0;
+
+        function frameWrapper() {
+          var epochsPerFrame = 5;
+          for (var e = 0; e < epochsPerFrame && epoch < maxEpochs; e++) {
+            var batchLoss = trainSample(task.input, task.target, lr);
+            if (batchLoss < bestLoss) {
+              bestLoss = batchLoss;
+              patienceCounter = 0;
+            } else {
+              patienceCounter++;
+              if (patienceCounter >= PATIENCE) {
+                lr = Math.max(MIN_LR, lr * DECAY);
+                patienceCounter = 0;
+              }
+            }
+            epoch++;
+          }
+
+          var out = forward(task.input);
+          var predNorm = out.a2[0];
+          var predDenorm = denormalize(predNorm, norm);
+          var error = Math.abs(predDenorm - task.actualVal);
+
+          var pulse = 0.5 + 0.5 * Math.sin(animFrame * 0.2);
+          drawNetwork(canvas, {
+            pulse: pulse,
+            inputActivations: task.input.map(function (v) {
+              return Math.min(1, Math.abs(v) * 0.5 + 0.3);
+            }),
+            hiddenActivations: out.a1.map(function (v) {
+              return Math.min(1, Math.abs(v) * 0.5 + 0.2);
+            }),
+            outputActivations: out.a2.map(function (v) {
+              return Math.min(1, Math.abs(v) * 0.5 + 0.3);
+            }),
+            stage: '增量步骤 ' + (currentTask + 1) + '/' + totalTasks + ' (容差≤' + tolerance + ')',
+            loss: error
+          });
+
+          animFrame++;
+
+          if (error <= tolerance || task.isAugmented) {
+            currentTask++;
+            if (onProgress) {
+              onProgress(currentTask, totalTasks, '增量 ' + currentTask + '/' + totalTasks + ' (误差:' + error.toFixed(4) + ')');
+            }
+            setTimeout(trainStep, 100);
+            return;
+          }
+
+          if (epoch >= maxEpochs) {
+            currentTask++;
+            if (onProgress) {
+              onProgress(currentTask, totalTasks, '增量 ' + currentTask + '/' + totalTasks + ' 跳过 (误差:' + error.toFixed(4) + ')');
+            }
+            setTimeout(trainStep, 100);
+            return;
+          }
+
+          requestAnimationFrame(frameWrapper);
+        }
+
+        requestAnimationFrame(frameWrapper);
+      }
+
+      if (onProgress) onProgress(0, totalTasks, '神经网络增量训练开始（保留旧权重）...');
+      trainStep();
+    });
+  }
+
   function reset() {
     inputSize = MIN_INPUT_SIZE;
     initWeights();
@@ -748,6 +918,7 @@ const neuralNet = (function () {
 
   return {
     progressiveTrain: progressiveTrain,
+    incrementalTrain: incrementalTrain,
     predict: predict,
     drawNetwork: drawNetwork,
     reset: reset,

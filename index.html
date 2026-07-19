@@ -28,15 +28,37 @@
             <div class="landing-card-desc">输入数字序列，40 种数学方法 + 神经网络预测</div>
           </div>
         </button>
+        <button class="landing-card" id="btn-enter-calculator">
+          <div class="landing-card-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="4" width="32" height="40" stroke="#ffd700" stroke-width="3" fill="#1a1a2e"/>
+              <rect x="12" y="8" width="24" height="8" fill="#1e90ff"/>
+              <rect x="12" y="20" width="6" height="6" fill="#ffd700"/>
+              <rect x="21" y="20" width="6" height="6" fill="#ffd700"/>
+              <rect x="30" y="20" width="6" height="6" fill="#ff4500"/>
+              <rect x="12" y="29" width="6" height="6" fill="#ffd700"/>
+              <rect x="21" y="29" width="6" height="6" fill="#ffd700"/>
+              <rect x="30" y="29" width="6" height="6" fill="#ffd700"/>
+              <rect x="12" y="38" width="6" height="6" fill="#ffd700"/>
+              <rect x="21" y="38" width="15" height="6" fill="#228b22"/>
+            </svg>
+          </div>
+          <div class="landing-card-body">
+            <div class="landing-card-title">计算机系统</div>
+            <div class="landing-card-desc">像素风计算器，支持四则运算与表达式求值</div>
+          </div>
+        </button>
         <!-- 后续可在此添加更多功能卡片，如学习系统 -->
       </div>
     </div>
     <div class="landing-pixels"></div>
   </div>
 
+  <div id="predictor-page" class="predictor-page">
   <header class="pixel-panel" style="text-align:center; margin:20px;">
     <h1 class="pixel-title">像素预测器 PIXEL PREDICTOR</h1>
     <p class="pixel-subtitle">输入数字序列 · 40 种数学方法预测 · 复古深空像素风</p>
+    <button id="btn-back-home-predict" class="pixel-btn" style="margin-top:10px;">返回首页</button>
   </header>
 
   <main class="layout">
@@ -54,6 +76,13 @@
           <button id="btn-reset" class="pixel-btn">重置</button>
           <button id="btn-export-json" class="pixel-btn">导出 JSON</button>
           <button id="btn-export-csv" class="pixel-btn">导出 CSV</button>
+          <label class="pixel-switch-wrap">
+            <input type="checkbox" id="longterm-toggle" class="pixel-switch-input">
+            <span class="pixel-switch-track">
+              <span class="pixel-switch-thumb"></span>
+            </span>
+            <span class="pixel-switch-label">长期训练</span>
+          </label>
         </div>
         <div class="weight-mode">
           <span>权重模式：</span>
@@ -150,6 +179,52 @@
   <footer class="pixel-panel" style="text-align:center; margin:20px;">
     <p>© 2026 Pixel Predictor · MIT License · 复古深空像素风</p>
   </footer>
+  </div><!-- end predictor-page -->
+
+  <div id="calculator-page" class="calculator-page" style="display:none;">
+    <header class="pixel-panel" style="text-align:center; margin:20px;">
+      <h1 class="pixel-title">像素计算器 PIXEL CALCULATOR</h1>
+      <p class="pixel-subtitle">按键或键盘输入 · 支持四则运算 · 复古深空像素风</p>
+    </header>
+    <main class="calc-layout">
+      <div class="pixel-panel calc-panel">
+        <h2>计算器</h2>
+        <div class="calc-output" id="calc-output">
+          <div class="calc-history" id="calc-history">— 等待输入 —</div>
+          <div class="calc-current" id="calc-current">0</div>
+        </div>
+        <div class="calc-keys">
+          <button class="pixel-btn calc-key" data-key="7">7</button>
+          <button class="pixel-btn calc-key" data-key="8">8</button>
+          <button class="pixel-btn calc-key" data-key="9">9</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="/">÷</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="C">C</button>
+
+          <button class="pixel-btn calc-key" data-key="4">4</button>
+          <button class="pixel-btn calc-key" data-key="5">5</button>
+          <button class="pixel-btn calc-key" data-key="6">6</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="*">×</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="(">(</button>
+
+          <button class="pixel-btn calc-key" data-key="1">1</button>
+          <button class="pixel-btn calc-key" data-key="2">2</button>
+          <button class="pixel-btn calc-key" data-key="3">3</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="-">−</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key=")">)</button>
+
+          <button class="pixel-btn calc-key" data-key="0">0</button>
+          <button class="pixel-btn calc-key" data-key=".">.</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="+">+</button>
+          <button class="pixel-btn calc-key calc-key-eq" data-key="=">=</button>
+          <button class="pixel-btn calc-key calc-key-op" data-key="back">⌫</button>
+        </div>
+        <input type="text" id="calc-input" class="pixel-input calc-input" placeholder="输入表达式，如 1+2*3，按回车求值" autocomplete="off">
+      </div>
+    </main>
+    <footer class="pixel-panel" style="text-align:center; margin:20px;">
+      <button id="btn-back-home-calc" class="pixel-btn">返回首页</button>
+    </footer>
+  </div>
 
   <div id="toast" class="pixel-panel pixel-toast" style="display:none;"></div>
 

@@ -54,6 +54,12 @@
   let trainingInProgress = false;
   let trainingTimeoutId = null;  // 用于取消 / for cancellation
 
+  // 长期训练模式状态 / long-term training mode state
+  let longtermMode = false;
+  let longtermSeries = [];
+  const LONGTERM_SERIES_KEY = 'longterm_series';
+  const LONGTERM_MODE_KEY = 'longterm_mode';
+
   // ============================================================
   // Part 1: 输入解析与校验 / Input Parsing & Validation
   // ============================================================
@@ -121,6 +127,68 @@
       return false;
     }
     return true;
+  }
+
+  // ============================================================
+  // Part 1.5: 长期训练模式 / Long-term Training Mode
+  // ============================================================
+
+  /**
+   * loadLongtermState()
+   * 页面加载时从 localStorage 恢复长期训练模式状态与累积序列。
+   */
+  function loadLongtermState() {
+    try {
+      longtermMode = localStorage.getItem(LONGTERM_MODE_KEY) === '1';
+      const saved = localStorage.getItem(LONGTERM_SERIES_KEY);
+      longtermSeries = saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      longtermMode = false;
+      longtermSeries = [];
+    }
+    const toggle = document.getElementById('longterm-toggle');
+    if (toggle) toggle.checked = longtermMode;
+    updatePredictButtonText();
+  }
+
+  /**
+   * saveLongtermState()
+   * 把长期训练模式状态与累积序列持久化到 localStorage。
+   */
+  function saveLongtermState() {
+    try {
+      localStorage.setItem(LONGTERM_MODE_KEY, longtermMode ? '1' : '0');
+      localStorage.setItem(LONGTERM_SERIES_KEY, JSON.stringify(longtermSeries));
+    } catch (e) { /* ignore */ }
+  }
+
+  /**
+   * updatePredictButtonText()
+   * 根据长期模式切换预测按钮文案。
+   */
+  function updatePredictButtonText() {
+    const btn = document.getElementById('btn-predict');
+    if (!btn) return;
+    btn.textContent = longtermMode ? '预测+训练' : '预测';
+  }
+
+  /**
+   * initLongtermToggle()
+   * 绑定长期训练模式开关事件。
+   */
+  function initLongtermToggle() {
+    const toggle = document.getElementById('longterm-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('change', function () {
+      longtermMode = toggle.checked;
+      saveLongtermState();
+      updatePredictButtonText();
+      if (longtermMode) {
+        showToast('长期训练模式已开启，每次预测将累积序列并增量训练神经网络');
+      } else {
+        showToast('长期训练模式已关闭');
+      }
+    });
   }
 
   // ============================================================
@@ -261,7 +329,7 @@
     const btn = document.getElementById('btn-predict');
     if (btn) {
       btn.disabled = !enabled;
-      btn.textContent = enabled ? '预测' : '训练中...';
+      btn.textContent = enabled ? (longtermMode ? '预测+训练' : '预测') : '训练中...';
     }
     const radios = document.querySelectorAll('input[name="weight-mode"]');
     for (let i = 0; i < radios.length; i++) {
@@ -283,8 +351,25 @@
     if (parsed.ignored > 0) {
       showToast('已忽略 ' + parsed.ignored + ' 个非法值');
     }
-    if (!validateInput(parsed.values)) return;
-    runTrainingAnimation(parsed.values);
+    if (!validateInput(parsed.values)) {
+      // 长期模式下，如果当前输入不足但累积序列足够，仍可继续
+      if (longtermMode && longtermSeries.length >= 2) {
+        runTrainingAnimation(longtermSeries.slice());
+      }
+      return;
+    }
+    if (longtermMode) {
+      // 累积模式：追加到 longtermSeries，清空输入框
+      for (let i = 0; i < parsed.values.length; i++) {
+        longtermSeries.push(parsed.values[i]);
+      }
+      textarea.value = '';
+      saveLongtermState();
+      showToast('累积序列长度：' + longtermSeries.length);
+      runTrainingAnimation(longtermSeries.slice());
+    } else {
+      runTrainingAnimation(parsed.values);
+    }
   }
 
   /**
@@ -446,12 +531,16 @@
 
     // 神经网络预测（独立，不参与融合）/ NN prediction (independent, not in ensemble)
     // 渐进式训练：用前几个数字预测下一个，误差在±0.1内才训练下一组
+    // 长期模式下优先使用 incrementalTrain（保留权重），否则降级 progressiveTrain
     const nnCanvas = document.getElementById('nn-canvas');
     let nnPreds = [];
-    if (nnCanvas && typeof neuralNet !== 'undefined' && neuralNet.progressiveTrain) {
+    const trainFn = (longtermMode && typeof neuralNet !== 'undefined' && typeof neuralNet.incrementalTrain === 'function')
+      ? neuralNet.incrementalTrain
+      : (typeof neuralNet !== 'undefined' ? neuralNet.progressiveTrain : null);
+    if (nnCanvas && trainFn) {
       setTrainingProgress(1, 2, '神经网络渐进训练中...');
       try {
-        nnPreds = await neuralNet.progressiveTrain(nnCanvas, series, predSteps, function (cur, total, stage) {
+        nnPreds = await trainFn(nnCanvas, series, predSteps, function (cur, total, stage) {
           setTrainingProgress(cur, total, stage);
         });
       } catch (e) {
@@ -866,6 +955,12 @@
     clearCanvas(document.getElementById('weight-chart'));
     clearCanvas(document.getElementById('nn-canvas'));
 
+    // 长期模式关闭时清空累积序列 / clear accumulated series when longterm mode is off
+    if (!longtermMode) {
+      longtermSeries = [];
+      saveLongtermState();
+    }
+
     showToast('已重置');
   }
 
@@ -1043,6 +1138,191 @@
   }
 
   // ============================================================
+  // Part 7.5: 计算器逻辑 / Calculator Logic
+  // ============================================================
+
+  /**
+   * calculateExpr(expr) → { ok: boolean, value?: number, error?: string }
+   * 安全表达式求值：
+   *   1. 字符白名单：数字、+ - * / ( ) . 空格
+   *   2. 替换 × ÷ − 为 * / -
+   *   3. 用 Function 构造器求值（不用 eval）
+   *   4. 结果校验必须是有限数
+   */
+  function calculateExpr(expr) {
+    if (typeof expr !== 'string' || expr.trim() === '') {
+      return { ok: false, error: '空表达式' };
+    }
+    // 替换显示符号为代码符号
+    let cleaned = expr
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/−/g, '-')
+      .replace(/\s+/g, '');
+    // 白名单校验
+    if (!/^[-+*/().0-9]+$/.test(cleaned)) {
+      return { ok: false, error: '包含非法字符' };
+    }
+    // 不允许连续运算符结尾
+    if (/[+\-*/]$/.test(cleaned) && cleaned.length > 0) {
+      // 允许以负号开头，但其他结尾视为不完整
+      if (!/^-$/.test(cleaned)) {
+        return { ok: false, error: '表达式不完整' };
+      }
+    }
+    try {
+      // 使用 Function 构造器（比 eval 安全一些，但仍然要靠白名单防护）
+      const fn = new Function('return (' + cleaned + ');');
+      const result = fn();
+      if (typeof result !== 'number' || !Number.isFinite(result)) {
+        return { ok: false, error: '结果无效' };
+      }
+      return { ok: true, value: result };
+    } catch (e) {
+      return { ok: false, error: '语法错误' };
+    }
+  }
+
+  /**
+   * formatCalcResult(value) → string
+   * 格式化计算结果：整数显示整数，浮点保留最多 10 位小数。
+   */
+  function formatCalcResult(value) {
+    if (Number.isInteger(value)) return String(value);
+    return String(parseFloat(value.toFixed(10)));
+  }
+
+  /**
+   * calcUpdateCurrent()
+   * 同步 calc-input 到 calc-current 显示。
+   */
+  function calcUpdateCurrent() {
+    const input = document.getElementById('calc-input');
+    const current = document.getElementById('calc-current');
+    if (!input || !current) return;
+    current.textContent = input.value === '' ? '0' : input.value;
+  }
+
+  /**
+   * calcAppendKey(key)
+   * 把按键字符追加到 calc-input 末尾。
+   */
+  function calcAppendKey(key) {
+    const input = document.getElementById('calc-input');
+    if (!input) return;
+    if (key === 'C') {
+      input.value = '';
+    } else if (key === 'back') {
+      input.value = input.value.slice(0, -1);
+    } else if (key === '=') {
+      calcEvaluate();
+      return;
+    } else {
+      // 运算符显示用 × ÷ −，存储也用这些（calculateExpr 会转换）
+      let displayKey = key;
+      if (key === '*') displayKey = '×';
+      else if (key === '/') displayKey = '÷';
+      else if (key === '-') displayKey = '−';
+      input.value += displayKey;
+    }
+    calcUpdateCurrent();
+  }
+
+  /**
+   * calcEvaluate()
+   * 求值并把结果加入历史。
+   */
+  function calcEvaluate() {
+    const input = document.getElementById('calc-input');
+    const history = document.getElementById('calc-history');
+    const current = document.getElementById('calc-current');
+    if (!input || !current) return;
+    const expr = input.value;
+    if (expr.trim() === '') return;
+    const result = calculateExpr(expr);
+    if (result.ok) {
+      const formatted = formatCalcResult(result.value);
+      if (history) history.textContent = expr + ' =';
+      current.textContent = formatted;
+      input.value = formatted;
+    } else {
+      if (history) history.textContent = expr;
+      current.textContent = '错误：' + (result.error || '无效');
+    }
+  }
+
+  /**
+   * initCalculator()
+   * 绑定计算器按键和输入框事件。
+   */
+  function initCalculator() {
+    const keys = document.querySelectorAll('.calc-key');
+    for (let i = 0; i < keys.length; i++) {
+      keys[i].addEventListener('click', function () {
+        const k = this.getAttribute('data-key');
+        if (k) calcAppendKey(k);
+      });
+    }
+    const input = document.getElementById('calc-input');
+    if (input) {
+      input.addEventListener('input', calcUpdateCurrent);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          calcEvaluate();
+        }
+      });
+    }
+  }
+
+  // ============================================================
+  // Part 7.6: 页面切换 / Page Switching
+  // ============================================================
+
+  function showLanding() {
+    const landing = document.getElementById('landing-page');
+    const predictor = document.getElementById('predictor-page');
+    const calc = document.getElementById('calculator-page');
+    if (landing) landing.classList.remove('hidden');
+    if (predictor) predictor.classList.remove('active');
+    if (calc) calc.classList.remove('active');
+  }
+
+  function showPredictor() {
+    const landing = document.getElementById('landing-page');
+    const predictor = document.getElementById('predictor-page');
+    const calc = document.getElementById('calculator-page');
+    if (landing) landing.classList.add('hidden');
+    if (predictor) predictor.classList.add('active');
+    if (calc) calc.classList.remove('active');
+    // 触发画布重绘
+    setTimeout(function () {
+      if (typeof resizeCanvases === 'function') resizeCanvases();
+      else window.dispatchEvent(new Event('resize'));
+    }, 50);
+  }
+
+  function showCalculator() {
+    const landing = document.getElementById('landing-page');
+    const predictor = document.getElementById('predictor-page');
+    const calc = document.getElementById('calculator-page');
+    if (landing) landing.classList.add('hidden');
+    if (predictor) predictor.classList.remove('active');
+    if (calc) calc.classList.add('active');
+  }
+
+  function initPageSwitching() {
+    const btnPredictor = document.getElementById('btn-enter-predictor');
+    const btnCalc = document.getElementById('btn-enter-calculator');
+    const btnBackPredict = document.getElementById('btn-back-home-predict');
+    const btnBackCalc = document.getElementById('btn-back-home-calc');
+    if (btnPredictor) btnPredictor.addEventListener('click', showPredictor);
+    if (btnCalc) btnCalc.addEventListener('click', showCalculator);
+    if (btnBackPredict) btnBackPredict.addEventListener('click', showLanding);
+    if (btnBackCalc) btnBackCalc.addEventListener('click', showLanding);
+  }
+
+  // ============================================================
   // Part 8: 初始化 / Initialization
   // ============================================================
 
@@ -1099,6 +1379,14 @@
 
     // 落地页交互初始化 / landing page interaction
     initLandingPage();
+
+    // 长期训练模式初始化 / long-term training mode init
+    loadLongtermState();
+    initLongtermToggle();
+
+    // 计算器与页面切换初始化 / calculator and page switching init
+    initCalculator();
+    initPageSwitching();
   }
 
   // ============================================================
