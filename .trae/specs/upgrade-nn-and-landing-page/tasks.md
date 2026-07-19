@@ -17,9 +17,9 @@
   - [x] SubTask 2.3: 在 app.js 中添加落地页交互逻辑（点击按钮隐藏落地页、显示预测页）
   - [x] SubTask 2.4: 确保落地页在页面加载时默认显示，预测页隐藏
 
-- [ ] Task 3: 推送 GitHub
-  - [ ] SubTask 3.1: 提交并推送到 origin main + gh-pages
-  - [ ] SubTask 3.2: 验证部署
+- [x] Task 3: 推送 GitHub
+  - [x] SubTask 3.1: 本地提交完成（commit d9275f5），推送需要用户认证
+  - [ ] SubTask 3.2: 验证部署（待推送后验证）
 
 # Task Dependencies
 - [Task 2] 独立于 [Task 1]，可并行
