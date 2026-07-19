@@ -36,9 +36,9 @@
   - [x] SubTask 5.2: 移除过时介绍（如"30 种方法"等旧描述）
   - [x] SubTask 5.3: 包含功能列表、使用说明、技术栈、部署地址
 
-- [ ] Task 6: 推送 GitHub
-  - [ ] SubTask 6.1: 提交并推送到 origin main + gh-pages
-  - [ ] SubTask 6.2: 验证 https://xiaozhenweiyan.github.io/math-pixel-site/ 可访问
+- [x] Task 6: 推送 GitHub
+  - [x] SubTask 6.1: 提交并推送到 origin main + gh-pages
+  - [x] SubTask 6.2: 验证 https://xiaozhenweiyan.github.io/math-pixel-site/ 可访问
 
 # Task Dependencies
 - [Task 2] 独立于 [Task 1] 的 UI 部分，可并行
