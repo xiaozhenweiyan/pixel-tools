@@ -47,16 +47,12 @@ body {
 }
 
 html {
-  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 body {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
   background-color: var(--bg-deep);
   /* 微妙的像素网格底纹，增强复古深空氛围 */
   background-image:
@@ -70,11 +66,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* 让 main 占据剩余空间，把 footer 推到底部 */
-main.layout {
-  flex: 1 0 auto;
 }
 
 /* ---------- Pixel Panel (核心面板) ---------- */
@@ -4106,15 +4097,14 @@ footer.pixel-panel p {
    ============================================================ */
 
 /* ---------- 基础移动端优化 ---------- */
-html, body {
+html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 body {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ---------- 触控尺寸优化：按钮最小 44×44px ---------- */
@@ -5013,13 +5003,6 @@ body {
 
   .sequencer-step-labels {
     min-width: 420px;
-  }
-}
-
-/* ---------- 防止 iOS 橡皮筋效果 ---------- */
-@supports (-webkit-touch-callout: none) {
-  body {
-    overscroll-behavior-y: none;
   }
 }
 
