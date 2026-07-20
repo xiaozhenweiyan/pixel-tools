@@ -55,6 +55,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background-color: var(--bg-deep);
   /* 微妙的像素网格底纹，增强复古深空氛围 */
   background-image:
