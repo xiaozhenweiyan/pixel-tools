@@ -337,9 +337,9 @@
 
       label_wasm_acceleration: 'WebAssembly 加速',
       wasm_desc: '反应扩散模式硬件加速（实验性功能）',
-      toast_wasm_enabled: 'WebAssembly 加速已开启，反应扩散模式将使用 Wasm 加速',
+      toast_wasm_enabled: 'WebAssembly 加速已启用（JS 优化内核），反应扩散模式将使用加速计算',
       toast_wasm_disabled: 'WebAssembly 加速已关闭',
-      toast_wasm_load_failed: 'Wasm 模块加载失败，将使用 JS 版本',
+      toast_wasm_load_failed: '加速模块加载失败，已回退到标准模式',
 
       guest: '访客',
       toast_welcome: '欢迎你，{name}！',
@@ -903,9 +903,9 @@
 
       label_wasm_acceleration: 'WebAssembly Acceleration',
       wasm_desc: 'Reaction-Diffusion mode hardware acceleration (experimental)',
-      toast_wasm_enabled: 'WebAssembly acceleration enabled. Reaction-Diffusion mode will use Wasm acceleration.',
+      toast_wasm_enabled: 'WebAssembly acceleration enabled (JS optimized kernel). Reaction-Diffusion mode will use accelerated computation.',
       toast_wasm_disabled: 'WebAssembly acceleration disabled',
-      toast_wasm_load_failed: 'Wasm module load failed, falling back to JS version',
+      toast_wasm_load_failed: 'Acceleration module load failed, falling back to standard mode',
 
       guest: 'Guest',
       toast_welcome: 'Welcome, {name}!',

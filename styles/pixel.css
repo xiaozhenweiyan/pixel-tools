@@ -1560,6 +1560,20 @@ footer.pixel-panel p {
   box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
 }
 
+/* ---------- 首页教程按钮：右上角小尺寸 ---------- */
+.tutorial-btn[data-page="app-landing-page"] {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: auto;
+  max-width: none;
+  padding: 6px 14px;
+  z-index: 9000;
+}
+
 /* ============================================================
    设置页面 / Settings Page
    ============================================================ */
@@ -6093,6 +6107,311 @@ canvas {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* ---------- Pixel Dialog (自制像素风模态弹窗) ---------- */
+.pixel-dialog-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+}
+
+.pixel-dialog {
+  background: #1a1a2e;
+  border: 3px solid #ffd700;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+  font-family: var(--font);
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #fff;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px;
+}
+
+.pixel-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.pixel-dialog-title {
+  font-size: 16px;
+  color: #ffd700;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.pixel-dialog-close {
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  font-family: var(--font);
+  font-weight: bold;
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pixel-dialog-close:hover {
+  background: #ffd700;
+  color: #1a1a2e;
+  border-color: #ffd700;
+}
+
+.pixel-dialog-body {
+  color: #fff;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.pixel-dialog-input {
+  background: #2d2d44;
+  border: 3px solid #ffd700;
+  border-radius: 2px;
+  color: #fff;
+  font-family: var(--font);
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-size: 16px;
+  padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  text-transform: lowercase;
+}
+
+.pixel-dialog-input:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.4);
+}
+
+.pixel-dialog-error {
+  color: #ff4500;
+  font-size: 12px;
+  min-height: 18px;
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+
+.pixel-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.pixel-dialog-btn {
+  background: #2d2d44;
+  border: 3px solid #fff;
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+  font-family: var(--font);
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #fff;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+  user-select: none;
+}
+
+.pixel-dialog-btn:hover {
+  background: #3d3d54;
+}
+
+.pixel-dialog-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.pixel-dialog-btn-confirm {
+  background: #ffd700;
+  color: #1a1a2e;
+  border-color: #ffd700;
+}
+
+.pixel-dialog-btn-confirm:hover {
+  background: #ffea4a;
+}
+
+/* ============================================================
+   像素风模态弹窗 Pixel Dialog（替代 prompt/alert）
+   ============================================================ */
+.pixel-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.pixel-dialog {
+  background: #1a1a2e;
+  border: 3px solid #ffd700;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #fff;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px;
+  animation: pixel-dialog-pop 0.12s ease-out;
+}
+
+@keyframes pixel-dialog-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pixel-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.pixel-dialog-title {
+  font-size: 16px;
+  color: #ffd700;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+  margin: 0;
+}
+
+.pixel-dialog-close {
+  background: transparent;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.05s;
+}
+
+.pixel-dialog-close:hover {
+  background: #ffd700;
+  color: #1a1a2e;
+}
+
+.pixel-dialog-body {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 4px 0 12px 0;
+  word-break: break-word;
+}
+
+.pixel-dialog-input {
+  background: #2d2d44;
+  border: 3px solid #ffd700;
+  border-radius: 3px;
+  color: #fff;
+  font-family: inherit;
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-size: 16px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  text-transform: lowercase;
+  margin-bottom: 8px;
+}
+
+.pixel-dialog-input:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.4);
+}
+
+.pixel-dialog-error {
+  color: #ff4500;
+  font-size: 12px;
+  min-height: 18px;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.pixel-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.pixel-dialog-btn {
+  background: #2d2d44;
+  border: 3px solid #fff;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: inherit;
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-size: 13px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.pixel-dialog-btn:hover {
+  background: #3d3d54;
+}
+
+.pixel-dialog-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.pixel-dialog-btn-confirm {
+  background: #ffd700;
+  border-color: #ffd700;
+  color: #1a1a2e;
+}
+
+.pixel-dialog-btn-confirm:hover {
+  background: #ffea4d;
 }
 
 

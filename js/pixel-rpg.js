@@ -26,35 +26,46 @@ window.PixelRPG = (function () {
   // 常量 / Constants
   // ============================================================
 
-  // 颜色（与站点 pixel.css 调色板一致）
+  // 颜色（地牢风调色板）
   const COLOR = {
-    BG:          '#1a1a2e', // 背景深空
-    GRASS:       '#228b22', // 草地绿
-    GRASS_DK:    '#1a6b1a', // 草地暗
-    WALL:        '#2d2d44', // 墙壁（面板色）
-    WALL_DK:     '#1f1f33', // 墙壁暗
-    WALL_LT:     '#3d3d54', // 墙壁亮
-    CHEST:       '#ffd700', // 宝箱金
-    CHEST_DK:    '#8b4513', // 宝箱暗棕
-    EXIT:        '#1e90ff', // 出口蓝
-    PLAYER:      '#ffd700', // 玩家金色 tunic
-    PLAYER_SKIN: '#ffe4c4', // 玩家肤色
-    PLAYER_HAIR: '#8b4513', // 玩家头发 / 裤子棕
-    HP_RED:      '#ff4500', // HP 红
-    HP_GREEN:    '#228b22', // HP 绿
-    EXP_BLUE:    '#1e90ff', // 经验蓝
-    PANEL:       '#2d2d44', // UI 面板
-    TEXT:        '#ffd700', // 文字金
-    TEXT_DIM:    '#8888aa', // 暗文字
-    BLACK:       '#000000',
-    WHITE:       '#ffffff'
+    BG:                   '#0a0a14', // 地牢背景（更暗）
+    FLOOR:                '#3a3a3a', // 深灰石板地板
+    GRASS:                '#228b22', // 草地绿（保留兼容，未使用）
+    GRASS_DK:             '#1a6b1a', // 草地暗（保留兼容，未使用）
+    WALL:                 '#1a1a1a', // 黑色砖墙主色
+    WALL_DK:              '#1f1f33', // 墙壁暗（保留供 UI 使用）
+    WALL_LT:              '#3d3d54', // 墙壁亮（保留供 UI 使用）
+    WALL_HIGHLIGHT:       '#2a2a2a', // 砖墙高光
+    WALL_SHADOW:          '#000000', // 砖墙阴影
+    TORCH_HANDLE:         '#8b4513', // 火把木柄棕色
+    TORCH_FIRE:           '#ff6600', // 火把橙色火焰
+    TORCH_FIRE_HIGHLIGHT: '#ffaa00', // 火把火焰高光
+    ROBE:                 '#0a0a0a', // 玩家黑袍
+    MASK:                 '#f0f0f0', // 玩家白色面具
+    SLIME:                'rgba(124, 252, 0, 0.85)', // 史莱姆半透明绿
+    SLIME_HIGHLIGHT:      '#aaff44', // 史莱姆高光
+    SLIME_OUTLINE:        '#4a8a00', // 史莱姆暗描边
+    CHEST:                '#ffd700', // 宝箱金
+    CHEST_DK:             '#8b4513', // 宝箱暗棕
+    EXIT:                 '#ffd700', // 出口金（向下走廊箭头）
+    PLAYER:               '#ffd700', // 玩家金色（保留兼容，未使用）
+    PLAYER_SKIN:          '#ffe4c4', // 玩家肤色（保留兼容，未使用）
+    PLAYER_HAIR:          '#8b4513', // 玩家头发（保留兼容，未使用）
+    HP_RED:               '#ff4500', // HP 红
+    HP_GREEN:             '#228b22', // HP 绿
+    EXP_BLUE:             '#1e90ff', // 经验蓝
+    PANEL:                '#2d2d44', // UI 面板
+    TEXT:                 '#ffd700', // 文字金
+    TEXT_DIM:             '#8888aa', // 暗文字
+    BLACK:                '#000000',
+    WHITE:                '#ffffff'
   };
 
   // 瓦片类型
   const TILE = {
-    GRASS: 0,
-    WALL: 1,
-    EXIT: 2
+    FLOOR: 0, // 深灰石板地板（地牢）
+    WALL: 1,  // 黑色砖墙
+    EXIT: 2   // 向下走廊出口
   };
 
   // 地图尺寸
@@ -72,12 +83,12 @@ window.PixelRPG = (function () {
   // 移动动画速度（每秒移动几格）
   const MOVE_SPEED = 8;
 
-  // 怪物种类（基础数值，会随关卡缩放）
+  // 怪物种类（基础数值，会随关卡缩放；weight 控制生成权重）
   const MONSTER_TYPES = [
-    { name: '史莱姆', hp: 8,  atk: 3, def: 0, exp: 5,  color: '#7cfc00', color2: '#4a8a00' },
-    { name: '蝙蝠',   hp: 6,  atk: 5, def: 0, exp: 7,  color: '#9370db', color2: '#5a3080' },
-    { name: '骷髅',   hp: 12, atk: 6, def: 2, exp: 12, color: '#e0e0e0', color2: '#888888' },
-    { name: '哥布林', hp: 10, atk: 7, def: 1, exp: 10, color: '#8b4513', color2: '#4a2408' }
+    { name: '史莱姆', hp: 8,  atk: 3, def: 0, exp: 5,  color: '#7cfc00', color2: '#4a8a00', weight: 60 },
+    { name: '蝙蝠',   hp: 6,  atk: 5, def: 0, exp: 7,  color: '#9370db', color2: '#5a3080', weight: 13 },
+    { name: '骷髅',   hp: 12, atk: 6, def: 2, exp: 12, color: '#e0e0e0', color2: '#888888', weight: 13 },
+    { name: '哥布林', hp: 10, atk: 7, def: 1, exp: 10, color: '#8b4513', color2: '#4a2408', weight: 14 }
   ];
 
   // BGM 旋律（C 大调五声音阶，8 音符循环）
@@ -130,6 +141,7 @@ window.PixelRPG = (function () {
     // 怪物与宝箱
     monsters: [],
     chests: [],
+    torches: [],
 
     // 游戏状态
     level: 1,                    // 当前关卡
@@ -367,48 +379,46 @@ window.PixelRPG = (function () {
   // ============================================================
 
   /**
-   * 生成指定关卡的地图（草地 + 随机墙段 + 出口 + 怪物 + 宝箱）。
+   * 生成指定关卡的地图（地牢迷宫 + 火把 + 出口 + 怪物 + 宝箱）。
+   * 使用递归回溯算法挖出完美迷宫通道。
    * @param {number} level 关卡数
    */
   function generateMap(level) {
-    // 初始化全部为草地
+    // 初始化全墙（地牢砖墙）
     state.map = [];
+    state.torches = [];
     for (let y = 0; y < MAP_H; y++) {
       state.map[y] = [];
       for (let x = 0; x < MAP_W; x++) {
-        state.map[y][x] = TILE.GRASS;
+        state.map[y][x] = TILE.WALL;
       }
     }
-    // 边界墙
-    for (let x = 0; x < MAP_W; x++) {
-      state.map[0][x] = TILE.WALL;
-      state.map[MAP_H - 1][x] = TILE.WALL;
-    }
-    for (let y = 0; y < MAP_H; y++) {
-      state.map[y][0] = TILE.WALL;
-      state.map[y][MAP_W - 1] = TILE.WALL;
-    }
-    // 随机墙段（房间分隔）
-    const numWalls = 3 + Math.min(level, 4);
-    for (let i = 0; i < numWalls; i++) {
-      if (Math.random() < 0.5) {
-        // 水平墙
-        const wy = 2 + Math.floor(Math.random() * (MAP_H - 4));
-        const wx1 = 1 + Math.floor(Math.random() * (MAP_W - 6));
-        const wx2 = wx1 + 3 + Math.floor(Math.random() * 4);
-        for (let x = wx1; x <= wx2; x++) state.map[wy][x] = TILE.WALL;
-        // 留缺口
-        const gap = wx1 + Math.floor(Math.random() * (wx2 - wx1 + 1));
-        state.map[wy][gap] = TILE.GRASS;
-      } else {
-        // 垂直墙
-        const wx = 2 + Math.floor(Math.random() * (MAP_W - 4));
-        const wy1 = 1 + Math.floor(Math.random() * (MAP_H - 6));
-        const wy2 = wy1 + 3 + Math.floor(Math.random() * 4);
-        for (let y = wy1; y <= wy2; y++) state.map[y][wx] = TILE.WALL;
-        const gap = wy1 + Math.floor(Math.random() * (wy2 - wy1 + 1));
-        state.map[gap][wx] = TILE.GRASS;
+
+    // 递归回溯算法挖通道（步长 2 保证墙厚 1）
+    const stack = [{ x: 1, y: 1 }];
+    state.map[1][1] = TILE.FLOOR;
+    const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]];
+
+    while (stack.length > 0) {
+      const cur = stack[stack.length - 1];
+      // 找未访问的邻居（仍为 WALL 且坐标在范围内）
+      const neighbors = [];
+      for (let d = 0; d < dirs.length; d++) {
+        const nx = cur.x + dirs[d][0];
+        const ny = cur.y + dirs[d][1];
+        if (nx > 0 && nx < MAP_W - 1 && ny > 0 && ny < MAP_H - 1 && state.map[ny][nx] === TILE.WALL) {
+          neighbors.push({ x: nx, y: ny, dx: dirs[d][0], dy: dirs[d][1] });
+        }
       }
+      if (neighbors.length === 0) {
+        stack.pop();
+        continue;
+      }
+      // 随机选一个邻居，打通中间的墙
+      const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+      state.map[cur.y + pick.dy / 2][cur.x + pick.dx / 2] = TILE.FLOOR;
+      state.map[pick.y][pick.x] = TILE.FLOOR;
+      stack.push({ x: pick.x, y: pick.y });
     }
 
     // 玩家起点（左上角空地）
@@ -422,11 +432,34 @@ window.PixelRPG = (function () {
     state.player.moveProgress = 0;
     state.player.facing = 'down';
 
-    // 出口（右下角，标记为 EXIT 瓦片）
+    // 出口（右下角，确保是空地后标记为 EXIT 瓦片）
     const ex = MAP_W - 2;
     const ey = MAP_H - 2;
+    if (state.map[ey][ex] === TILE.WALL) {
+      state.map[ey][ex] = TILE.FLOOR;
+      // 若上下左右都是墙（孤立），打通上方连接附近通道
+      if (state.map[ey - 1][ex] === TILE.WALL && state.map[ey][ex - 1] === TILE.WALL) {
+        state.map[ey - 1][ex] = TILE.FLOOR;
+      }
+    }
     state.map[ey][ex] = TILE.EXIT;
     state.exit = { gx: ex, gy: ey };
+
+    // 火把：墙的中段以 20% 概率添加（且至少有一个相邻 FLOOR/EXIT）
+    for (let y = 1; y < MAP_H - 1; y++) {
+      for (let x = 1; x < MAP_W - 1; x++) {
+        if (state.map[y][x] === TILE.WALL) {
+          const adjacentFloor =
+            state.map[y - 1][x] === TILE.FLOOR || state.map[y - 1][x] === TILE.EXIT ||
+            state.map[y + 1][x] === TILE.FLOOR || state.map[y + 1][x] === TILE.EXIT ||
+            state.map[y][x - 1] === TILE.FLOOR || state.map[y][x - 1] === TILE.EXIT ||
+            state.map[y][x + 1] === TILE.FLOOR || state.map[y][x + 1] === TILE.EXIT;
+          if (adjacentFloor && Math.random() < 0.20) {
+            state.torches.push({ gx: x, gy: y });
+          }
+        }
+      }
+    }
 
     // 怪物
     state.monsters = [];
@@ -436,15 +469,25 @@ window.PixelRPG = (function () {
       attempts++;
       const mx = 1 + Math.floor(Math.random() * (MAP_W - 2));
       const my = 1 + Math.floor(Math.random() * (MAP_H - 2));
-      if (state.map[my][mx] !== TILE.GRASS) continue;
+      if (state.map[my][mx] !== TILE.FLOOR) continue;
       if (mx === state.player.gx && my === state.player.gy) continue;
       if (mx === ex && my === ey) continue;
       // 离玩家至少 4 格曼哈顿距离
       if (Math.abs(mx - state.player.gx) + Math.abs(my - state.player.gy) < 4) continue;
       // 不与已有怪物重叠
       if (state.monsters.some(m => m.gx === mx && m.gy === my)) continue;
-      const typeIdx = Math.floor(Math.random() * Math.min(MONSTER_TYPES.length, 1 + Math.floor(level / 2)));
-      const type = MONSTER_TYPES[typeIdx];
+      // 加权选择怪物类型（在等级可用范围内）
+      const availableCount = Math.min(MONSTER_TYPES.length, 1 + Math.floor(level / 2));
+      const available = MONSTER_TYPES.slice(0, availableCount);
+      let totalW = 0;
+      for (let i = 0; i < available.length; i++) totalW += available[i].weight;
+      let r = Math.random() * totalW;
+      let typeIdx = 0;
+      for (let i = 0; i < available.length; i++) {
+        r -= available[i].weight;
+        if (r <= 0) { typeIdx = i; break; }
+      }
+      const type = available[typeIdx];
       const scale = 1 + (level - 1) * 0.3;
       const hp = Math.round(type.hp * scale);
       state.monsters.push({
@@ -468,7 +511,7 @@ window.PixelRPG = (function () {
       attempts++;
       const cx = 1 + Math.floor(Math.random() * (MAP_W - 2));
       const cy = 1 + Math.floor(Math.random() * (MAP_H - 2));
-      if (state.map[cy][cx] !== TILE.GRASS) continue;
+      if (state.map[cy][cx] !== TILE.FLOOR) continue;
       if (cx === state.player.gx && cy === state.player.gy) continue;
       if (cx === ex && cy === ey) continue;
       if (state.monsters.some(m => m.gx === cx && m.gy === cy)) continue;
@@ -483,52 +526,84 @@ window.PixelRPG = (function () {
 
   /**
    * 绘制单个瓦片（16x16 像素，放大 SCALE 倍显示）。
+   * 地牢风：石板地板 / 黑色砖墙 / 向下走廊出口。
    */
   function drawTile(gx, gy, type) {
     const x = gx * PIXEL;
     const y = UI_HEIGHT + gy * PIXEL;
     const s = SCALE;
-    if (type === TILE.GRASS) {
-      ctx.fillStyle = COLOR.GRASS;
+    if (type === TILE.FLOOR) {
+      // 深灰石板地板
+      ctx.fillStyle = COLOR.FLOOR;
       ctx.fillRect(x, y, PIXEL, PIXEL);
-      // 草纹理（暗色斑点）
-      ctx.fillStyle = COLOR.GRASS_DK;
-      ctx.fillRect(x + 2 * s, y + 2 * s, 2 * s, 1 * s);
-      ctx.fillRect(x + 9 * s, y + 5 * s, 2 * s, 1 * s);
-      ctx.fillRect(x + 4 * s, y + 11 * s, 2 * s, 1 * s);
-      ctx.fillRect(x + 12 * s, y + 13 * s, 2 * s, 1 * s);
+      // 细微斑点（基于 gx,gy 的伪随机）
+      const seed = (gx * 73 + gy * 31) % 7;
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(x + (seed * 3 % 16) * s, y + (seed * 5 % 16) * s, 1 * s, 1 * s);
+      ctx.fillRect(x + (seed * 7 % 16) * s, y + (seed * 11 % 16) * s, 1 * s, 1 * s);
+      // 石板缝隙（深色边线，下边和右边）
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(x, y + PIXEL - 1 * s, PIXEL, 1 * s);
+      ctx.fillRect(x + PIXEL - 1 * s, y, 1 * s, PIXEL);
     } else if (type === TILE.WALL) {
+      // 黑色砖墙主体
       ctx.fillStyle = COLOR.WALL;
       ctx.fillRect(x, y, PIXEL, PIXEL);
-      // 顶部高光
-      ctx.fillStyle = COLOR.WALL_LT;
+      // 砖块高光（顶部和左侧）
+      ctx.fillStyle = COLOR.WALL_HIGHLIGHT;
       ctx.fillRect(x, y, PIXEL, 2 * s);
-      // 底部阴影
-      ctx.fillStyle = COLOR.WALL_DK;
+      ctx.fillRect(x, y, 2 * s, PIXEL);
+      // 砖块阴影（底部和右侧）
+      ctx.fillStyle = COLOR.WALL_SHADOW;
       ctx.fillRect(x, y + PIXEL - 2 * s, PIXEL, 2 * s);
-      // 砖块缝隙
+      ctx.fillRect(x + PIXEL - 2 * s, y, 2 * s, PIXEL);
+      // 砖块缝隙（中间横线）
+      ctx.fillStyle = COLOR.BLACK;
       ctx.fillRect(x, y + 8 * s, PIXEL, 1 * s);
-      ctx.fillRect(x + 8 * s, y, 1 * s, 8 * s);
-      ctx.fillRect(x + 4 * s, y + 9 * s, 1 * s, 7 * s);
-      ctx.fillRect(x + 12 * s, y + 9 * s, 1 * s, 7 * s);
+      // 错位竖线（奇偶行不同位置，模拟砌砖错位）
+      if (gy % 2 === 0) {
+        ctx.fillRect(x + 8 * s, y, 1 * s, 8 * s);
+        ctx.fillRect(x + 4 * s, y + 9 * s, 1 * s, 7 * s);
+      } else {
+        ctx.fillRect(x + 4 * s, y, 1 * s, 8 * s);
+        ctx.fillRect(x + 8 * s, y + 9 * s, 1 * s, 7 * s);
+      }
     } else if (type === TILE.EXIT) {
-      // 蓝色楼梯出口
-      ctx.fillStyle = COLOR.EXIT;
+      // 向下走廊出口
+      // 先画地板底色
+      ctx.fillStyle = COLOR.FLOOR;
       ctx.fillRect(x, y, PIXEL, PIXEL);
-      // 楼梯图案（暗色阶梯）
-      ctx.fillStyle = COLOR.BG;
-      ctx.fillRect(x + 4 * s, y + 3 * s, 8 * s, 2 * s);
-      ctx.fillRect(x + 5 * s, y + 5 * s, 6 * s, 2 * s);
-      ctx.fillRect(x + 6 * s, y + 7 * s, 4 * s, 2 * s);
-      ctx.fillRect(x + 7 * s, y + 9 * s, 2 * s, 4 * s);
-      // 高亮
-      ctx.fillStyle = COLOR.WHITE;
-      ctx.fillRect(x + 4 * s, y + 3 * s, 8 * s, 1 * s);
+      // 黑色走廊入口（向下延伸的暗道）
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(x + 4 * s, y + 2 * s, 8 * s, 12 * s);
+      // 拱门轮廓（深灰边框）
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(x + 4 * s, y + 2 * s, 8 * s, 1 * s);  // 顶部
+      ctx.fillRect(x + 4 * s, y + 2 * s, 1 * s, 4 * s);  // 左立柱
+      ctx.fillRect(x + 11 * s, y + 2 * s, 1 * s, 4 * s); // 右立柱
+      // 向下阶梯（3 级，逐渐变窄，模拟透视）
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(x + 5 * s, y + 6 * s, 6 * s, 2 * s);
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(x + 5 * s, y + 8 * s, 6 * s, 1 * s);
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(x + 6 * s, y + 9 * s, 4 * s, 2 * s);
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(x + 6 * s, y + 11 * s, 4 * s, 1 * s);
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(x + 7 * s, y + 12 * s, 2 * s, 2 * s);
+      // 底部金色向下箭头（指示下楼）
+      ctx.fillStyle = COLOR.EXIT;
+      const ax = x + 8 * s;
+      const ay = y + 13 * s;
+      ctx.fillRect(ax, ay, 1 * s, 2 * s);
+      ctx.fillRect(ax - 1 * s, ay + 2 * s, 3 * s, 1 * s);
     }
   }
 
   /**
-   * 绘制玩家（16x16 像素小人，4 方向 + 2 帧行走动画）。
+   * 绘制玩家（16x16 像素戴面具的黑衣人，4 方向 + 2 帧行走动画）。
+   * 整体只有黑+白两色：黑袍 + 黑兜帽 + 白色面具 + 黑色眼洞。
    * @param {number} px 屏幕坐标 x（含 UI 偏移）
    * @param {number} py 屏幕坐标 y（含 UI 偏移）
    * @param {string} facing up/down/left/right
@@ -537,65 +612,94 @@ window.PixelRPG = (function () {
   function drawPlayer(px, py, facing, frame) {
     const s = SCALE;
     // 阴影
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(px + 4 * s, py + 14 * s, 8 * s, 1 * s);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(px + 3 * s, py + 14 * s, 10 * s, 1 * s);
 
     // 腿偏移（行走动画：两腿前后错开）
     let lLegX = 5, rLegX = 9;
     if (frame === 1) { lLegX = 4; rLegX = 10; }
 
-    // 腿（棕色裤子）
-    ctx.fillStyle = COLOR.PLAYER_HAIR;
-    ctx.fillRect(px + lLegX * s, py + 11 * s, 2 * s, 3 * s);
-    ctx.fillRect(px + rLegX * s, py + 11 * s, 2 * s, 3 * s);
-    // 靴子（黑色）
-    ctx.fillStyle = COLOR.BLACK;
-    ctx.fillRect(px + lLegX * s, py + 14 * s, 2 * s, 1 * s);
-    ctx.fillRect(px + rLegX * s, py + 14 * s, 2 * s, 1 * s);
+    // 腿部（黑袍下摆）
+    ctx.fillStyle = COLOR.ROBE;
+    ctx.fillRect(px + lLegX * s, py + 12 * s, 2 * s, 3 * s);
+    ctx.fillRect(px + rLegX * s, py + 12 * s, 2 * s, 3 * s);
 
-    // 身体（金色 tunic）
-    ctx.fillStyle = COLOR.PLAYER;
-    ctx.fillRect(px + 4 * s, py + 7 * s, 8 * s, 4 * s);
-    // 腰带
-    ctx.fillStyle = COLOR.PLAYER_HAIR;
-    ctx.fillRect(px + 4 * s, py + 10 * s, 8 * s, 1 * s);
-    // 胸前装饰
-    ctx.fillStyle = COLOR.WHITE;
-    ctx.fillRect(px + 7 * s, py + 8 * s, 2 * s, 1 * s);
+    // 黑色长袍主体（覆盖身体）
+    ctx.fillStyle = COLOR.ROBE;
+    ctx.fillRect(px + 4 * s, py + 7 * s, 8 * s, 6 * s);
 
-    // 手臂（肤色）
-    ctx.fillStyle = COLOR.PLAYER_SKIN;
-    ctx.fillRect(px + 3 * s, py + 7 * s, 1 * s, 3 * s);
-    ctx.fillRect(px + 12 * s, py + 7 * s, 1 * s, 3 * s);
-
-    // 头部（肤色）
-    ctx.fillStyle = COLOR.PLAYER_SKIN;
-    ctx.fillRect(px + 5 * s, py + 3 * s, 6 * s, 4 * s);
-
-    // 头发
-    ctx.fillStyle = COLOR.PLAYER_HAIR;
-    ctx.fillRect(px + 4 * s, py + 2 * s, 8 * s, 2 * s);
-    ctx.fillRect(px + 5 * s, py + 1 * s, 6 * s, 1 * s);
-    // 侧鬓
-    ctx.fillRect(px + 4 * s, py + 3 * s, 1 * s, 2 * s);
-    ctx.fillRect(px + 11 * s, py + 3 * s, 1 * s, 2 * s);
-
-    // 眼睛（根据朝向）
-    ctx.fillStyle = COLOR.BLACK;
+    // 黑色兜帽（头部上方）
+    ctx.fillRect(px + 5 * s, py + 2 * s, 6 * s, 4 * s);
+    // 兜帽尖端（根据朝向有细微差别）
     if (facing === 'down') {
-      ctx.fillRect(px + 6 * s, py + 5 * s, 1 * s, 1 * s);
-      ctx.fillRect(px + 9 * s, py + 5 * s, 1 * s, 1 * s);
+      ctx.fillRect(px + 6 * s, py + 1 * s, 4 * s, 1 * s);
     } else if (facing === 'up') {
-      // 朝上：后脑勺，无眼睛
+      ctx.fillRect(px + 6 * s, py + 1 * s, 4 * s, 1 * s);
     } else if (facing === 'left') {
-      ctx.fillRect(px + 5 * s, py + 5 * s, 1 * s, 1 * s);
+      ctx.fillRect(px + 4 * s, py + 2 * s, 2 * s, 3 * s);
     } else if (facing === 'right') {
-      ctx.fillRect(px + 10 * s, py + 5 * s, 1 * s, 1 * s);
+      ctx.fillRect(px + 10 * s, py + 2 * s, 2 * s, 3 * s);
+    }
+
+    // 白色面具（覆盖脸部）
+    ctx.fillStyle = COLOR.MASK;
+    if (facing === 'down') {
+      ctx.fillRect(px + 6 * s, py + 5 * s, 4 * s, 3 * s);
+      // 黑色眼洞
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(px + 7 * s, py + 6 * s, 1 * s, 1 * s);
+      ctx.fillRect(px + 9 * s, py + 6 * s, 1 * s, 1 * s);
+    } else if (facing === 'up') {
+      // 朝上：背面，面具不显示（兜帽覆盖）
+    } else if (facing === 'left') {
+      ctx.fillRect(px + 5 * s, py + 5 * s, 3 * s, 3 * s);
+      // 黑色眼洞（单只）
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(px + 6 * s, py + 6 * s, 1 * s, 1 * s);
+    } else if (facing === 'right') {
+      ctx.fillRect(px + 8 * s, py + 5 * s, 3 * s, 3 * s);
+      // 黑色眼洞（单只）
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(px + 9 * s, py + 6 * s, 1 * s, 1 * s);
+    }
+  }
+
+  /**
+   * 绘制墙上火把（棕色木柄 + 闪烁的橙色火焰）。
+   * 火把位置由 generateMap 写入 state.torches。
+   */
+  function drawTorches() {
+    const s = SCALE;
+    if (!state.torches) return;
+    for (let i = 0; i < state.torches.length; i++) {
+      const t = state.torches[i];
+      const x = t.gx * PIXEL;
+      const y = UI_HEIGHT + t.gy * PIXEL;
+
+      // 火焰闪烁（基于 animTime + 火把位置相位偏移）
+      const flicker = Math.sin(state.animTime * 8 + t.gx * 1.7 + t.gy * 2.3);
+      const fireH = 4 + Math.floor(flicker * 1.5 + 1.5); // 4-7（逻辑像素）
+      const fireW = 3 + Math.floor(flicker * 0.5 + 0.5); // 3-4
+
+      // 橙色火焰主体（在木柄顶部上方）
+      const fireX = x + 8 * s - Math.floor(fireW / 2) * s;
+      const fireY = y + 6 * s - fireH * s;
+      ctx.fillStyle = COLOR.TORCH_FIRE;
+      ctx.fillRect(fireX, fireY, fireW * s, fireH * s);
+
+      // 火焰高光（黄色竖条）
+      ctx.fillStyle = COLOR.TORCH_FIRE_HIGHLIGHT;
+      ctx.fillRect(x + 8 * s, fireY + 1 * s, 1 * s, (fireH - 2) * s);
+
+      // 棕色木柄（竖条）
+      ctx.fillStyle = COLOR.TORCH_HANDLE;
+      ctx.fillRect(x + 7 * s, y + 6 * s, 2 * s, 8 * s);
     }
   }
 
   /**
    * 绘制怪物（16x16 像素，根据类型不同形状，含闲置浮动动画）。
+   * 史莱姆分支使用半透明绿色 + 自带描边/眼睛；其他怪物保留原绘制逻辑。
    */
   function drawMonster(m) {
     const x = m.gx * PIXEL;
@@ -608,35 +712,61 @@ window.PixelRPG = (function () {
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(x + 4 * s, y + 14 * s, 8 * s, 1 * s);
 
-    ctx.fillStyle = m.color;
     if (m.type === '史莱姆') {
-      // 半圆史莱姆
-      ctx.fillRect(x + 3 * s, y + (8 + bob) * s, 10 * s, 5 * s);
-      ctx.fillRect(x + 4 * s, y + (7 + bob) * s, 8 * s, 1 * s);
-      ctx.fillRect(x + 5 * s, y + (6 + bob) * s, 6 * s, 1 * s);
-    } else if (m.type === '蝙蝠') {
-      // 蝙蝠：身体 + 翅膀
-      ctx.fillRect(x + 6 * s, y + (6 + bob) * s, 4 * s, 5 * s);
-      ctx.fillRect(x + 2 * s, y + (7 + bob) * s, 4 * s, 3 * s);
-      ctx.fillRect(x + 10 * s, y + (7 + bob) * s, 4 * s, 3 * s);
-    } else if (m.type === '骷髅') {
-      // 骷髅：头骨 + 下颌
-      ctx.fillRect(x + 4 * s, y + (4 + bob) * s, 8 * s, 7 * s);
-      ctx.fillRect(x + 5 * s, y + (11 + bob) * s, 6 * s, 3 * s);
+      // 变形动画（scaleY 在 0.85-1.15 间变化）
+      const scaleY = 1.0 + Math.sin(state.animTime * 3 + m.gx * 1.3) * 0.15;
+      const baseH = 8; // 逻辑像素
+      const h = Math.floor(baseH * scaleY);
+      const offsetY = Math.floor((baseH - h) / 2);
+      const w = 8;
+      const sx = x + 4 * s;
+      const sy = y + (4 + offsetY) * s + bob;
+
+      // 半透明绿色主体
+      ctx.fillStyle = COLOR.SLIME;
+      ctx.fillRect(sx, sy, w * s, h * s);
+
+      // 高光
+      ctx.fillStyle = COLOR.SLIME_HIGHLIGHT;
+      ctx.fillRect(x + 6 * s, y + (5 + offsetY) * s + bob, 3 * s, 2 * s);
+
+      // 暗描边（顶/底/左/右）
+      ctx.fillStyle = COLOR.SLIME_OUTLINE;
+      ctx.fillRect(sx, sy, w * s, 1 * s);                   // 顶
+      ctx.fillRect(sx, sy + (h - 1) * s, w * s, 1 * s);     // 底
+      ctx.fillRect(sx, sy, 1 * s, h * s);                   // 左
+      ctx.fillRect(sx + (w - 1) * s, sy, 1 * s, h * s);     // 右
+
+      // 眼睛（两只黑色小点）
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(x + 6 * s, y + (7 + offsetY) * s + bob, 1 * s, 1 * s);
+      ctx.fillRect(x + 9 * s, y + (7 + offsetY) * s + bob, 1 * s, 1 * s);
     } else {
-      // 哥布林：小人
-      ctx.fillRect(x + 5 * s, y + (3 + bob) * s, 6 * s, 5 * s);
-      ctx.fillRect(x + 4 * s, y + (8 + bob) * s, 8 * s, 5 * s);
+      ctx.fillStyle = m.color;
+      if (m.type === '蝙蝠') {
+        // 蝙蝠：身体 + 翅膀
+        ctx.fillRect(x + 6 * s, y + (6 + bob) * s, 4 * s, 5 * s);
+        ctx.fillRect(x + 2 * s, y + (7 + bob) * s, 4 * s, 3 * s);
+        ctx.fillRect(x + 10 * s, y + (7 + bob) * s, 4 * s, 3 * s);
+      } else if (m.type === '骷髅') {
+        // 骷髅：头骨 + 下颌
+        ctx.fillRect(x + 4 * s, y + (4 + bob) * s, 8 * s, 7 * s);
+        ctx.fillRect(x + 5 * s, y + (11 + bob) * s, 6 * s, 3 * s);
+      } else {
+        // 哥布林：小人
+        ctx.fillRect(x + 5 * s, y + (3 + bob) * s, 6 * s, 5 * s);
+        ctx.fillRect(x + 4 * s, y + (8 + bob) * s, 8 * s, 5 * s);
+      }
+
+      // 暗色描边
+      ctx.fillStyle = m.color2;
+      ctx.fillRect(x + 3 * s, y + (12 + bob) * s, 10 * s, 1 * s);
+
+      // 眼睛
+      ctx.fillStyle = COLOR.BLACK;
+      ctx.fillRect(x + 6 * s, y + (8 + bob) * s, 1 * s, 1 * s);
+      ctx.fillRect(x + 9 * s, y + (8 + bob) * s, 1 * s, 1 * s);
     }
-
-    // 暗色描边
-    ctx.fillStyle = m.color2;
-    ctx.fillRect(x + 3 * s, y + (12 + bob) * s, 10 * s, 1 * s);
-
-    // 眼睛
-    ctx.fillStyle = COLOR.BLACK;
-    ctx.fillRect(x + 6 * s, y + (8 + bob) * s, 1 * s, 1 * s);
-    ctx.fillRect(x + 9 * s, y + (8 + bob) * s, 1 * s, 1 * s);
 
     // HP 条（受伤时显示）
     if (m.hp < m.maxHp) {
@@ -984,6 +1114,9 @@ window.PixelRPG = (function () {
       }
     }
 
+    // 墙上火把（在瓦片之后、宝箱/怪物之前）
+    drawTorches();
+
     // 宝箱
     state.chests.forEach(drawChest);
 
@@ -1123,7 +1256,7 @@ window.PixelRPG = (function () {
     };
     state.level = 1;
     state.gameOver = false;
-    state.message = '开始冒险! 找到蓝色出口进入下一关';
+    state.message = '开始地牢冒险! 找到向下走廊进入下一关';
     state.messageTimer = 3;
     state.animTime = 0;
     generateMap(1);

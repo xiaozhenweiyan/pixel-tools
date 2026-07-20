@@ -1289,6 +1289,108 @@
     });
   }
 
+  // ============================================================
+  // 内联 JS 优化版反应扩散内核 / Inline JS-optimized Reaction-Diffusion Kernel
+  // ============================================================
+  // 当 Wasm 二进制不可用时（emcc/wat2wasm 未安装或 wasm 文件缺失），
+  // 使用该内联优化版替代外部 wasm 文件，避免 404 并提供与 Emscripten 模块
+  // 接口兼容的加速内核（_init/_step/_getA/_getB/_getWidth/_getHeight/HEAPF32）。
+  // 优化点：Float32Array 存储、内联 laplacian（避免函数调用）、缓存行长与
+  // 数组长度到局部变量、热循环内不调用 Math.random。
+  function createJsOptimizedReactionDiffusionModule() {
+    let width = 0;
+    let height = 0;
+    let gridA = null;
+    let gridB = null;
+    let nextA = null;
+    let nextB = null;
+    // 兼容 Emscripten 风格：外部通过 new Float32Array(HEAPF32.buffer, ptr, size) 访问
+    const HEAPF32 = { buffer: new ArrayBuffer(0) };
+
+    function refreshHeap() {
+      if (gridB) HEAPF32.buffer = gridB.buffer;
+    }
+
+    return {
+      HEAPF32: HEAPF32,
+      _init: function (w, h, seed) {
+        width = w;
+        height = h;
+        const size = w * h;
+        gridA = new Float32Array(size);
+        gridB = new Float32Array(size);
+        nextA = new Float32Array(size);
+        nextB = new Float32Array(size);
+        for (let i = 0; i < size; i++) {
+          gridA[i] = 1.0;
+          gridB[i] = 0.0;
+        }
+        refreshHeap();
+        return 0;
+      },
+      _step: function (feed, kill, iterations) {
+        if (!gridA || !gridB) return 0;
+        const w = width;
+        const h = height;
+        const dA = 1.0;
+        const dB = 0.5;
+        const feedKill = feed + kill;
+
+        for (let iter = 0; iter < iterations; iter++) {
+          for (let y = 0; y < h; y++) {
+            const ym = y > 0 ? y - 1 : h - 1;
+            const yp = y < h - 1 ? y + 1 : 0;
+            const ymw = ym * w;
+            const yw = y * w;
+            const ypw = yp * w;
+            for (let x = 0; x < w; x++) {
+              const xm = x > 0 ? x - 1 : w - 1;
+              const xp = x < w - 1 ? x + 1 : 0;
+              const idx = yw + x;
+
+              const a = gridA[idx];
+              const b = gridB[idx];
+
+              const lapA =
+                gridA[ymw + xm] * 0.2 +
+                gridA[ymw + x]  * 0.05 +
+                gridA[ymw + xp] * 0.2 +
+                gridA[yw + xm]  * 0.05 +
+                gridA[yw + xp]  * 0.05 +
+                gridA[ypw + xm] * 0.2 +
+                gridA[ypw + x]  * 0.05 +
+                gridA[ypw + xp] * 0.2 -
+                a;
+
+              const lapB =
+                gridB[ymw + xm] * 0.2 +
+                gridB[ymw + x]  * 0.05 +
+                gridB[ymw + xp] * 0.2 +
+                gridB[yw + xm]  * 0.05 +
+                gridB[yw + xp]  * 0.05 +
+                gridB[ypw + xm] * 0.2 +
+                gridB[ypw + x]  * 0.05 +
+                gridB[ypw + xp] * 0.2 -
+                b;
+
+              const abb = a * b * b;
+              nextA[idx] = a + (dA * lapA - abb + feed * (1.0 - a));
+              nextB[idx] = b + (dB * lapB + abb - feedKill * b);
+            }
+          }
+          const tmpA = gridA; gridA = nextA; nextA = tmpA;
+          const tmpB = gridB; gridB = nextB; nextB = tmpB;
+        }
+        refreshHeap();
+        return 0;
+      },
+      _getA: function () { refreshHeap(); return 0; },
+      _getB: function () { refreshHeap(); return 0; },
+      _getWidth: function () { return width; },
+      _getHeight: function () { return height; }
+    };
+  }
+
   async function loadWasmModule() {
     if (!isWasmSupported()) {
       wasmLoaded = false;
@@ -1301,44 +1403,14 @@
     }
 
     try {
-      if (typeof Module !== 'undefined' && typeof Module.then === 'function') {
-        wasmModule = await Module();
-        wasmLoaded = true;
-        return true;
-      }
-
-      if (typeof ReactionDiffusionModule !== 'undefined') {
-        if (typeof ReactionDiffusionModule === 'function') {
-          wasmModule = await ReactionDiffusionModule();
-        } else {
-          wasmModule = ReactionDiffusionModule;
-        }
-        wasmLoaded = true;
-        return true;
-      }
-
-      try {
-        await loadScript('wasm/reaction-diffusion.js');
-        if (typeof Module !== 'undefined') {
-          if (typeof Module === 'function') {
-            wasmModule = await Module();
-          } else if (typeof Module.then === 'function') {
-            wasmModule = await Module;
-          } else {
-            wasmModule = Module;
-          }
-          wasmLoaded = true;
-          return true;
-        }
-      } catch (loadErr) {
-        console.warn('[pixel-art] Wasm script not found, falling back to JS');
-      }
-
-      wasmLoaded = false;
-      wasmModule = null;
-      return false;
+      // 不再尝试 loadScript('wasm/reaction-diffusion.js')（避免 404）。
+      // 直接初始化内联 JS 优化版内核，接口与 Emscripten 模块兼容，
+      // 由 WasmReactionDiffusion 包装类统一调用。
+      wasmModule = createJsOptimizedReactionDiffusionModule();
+      wasmLoaded = true;
+      return true;
     } catch (e) {
-      console.warn('[pixel-art] Wasm load failed, falling back to JS:', e);
+      console.warn('[pixel-art] Acceleration module init failed:', e);
       wasmLoaded = false;
       wasmModule = null;
       return false;

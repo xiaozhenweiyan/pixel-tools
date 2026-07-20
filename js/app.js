@@ -3830,63 +3830,54 @@
     }
 
     // 手动添加自定义参数 / manually add a custom parameter
-    // 弹出输入框，校验参数名（非空、长度 1-3、仅字母、非保留字、非重复）
+    // 弹出像素风模态弹窗，校验参数名（非空、单个字母、非保留字、非重复）
     // 校验通过后添加到 functionPlotterInstance.customParams 并重新渲染滑动条
     function addCustomParam() {
       const fps = window.functionPlotterInstance;
       if (!fps) return;
 
-      const raw = prompt('请输入参数名（如 k, m, t）：');
-      if (raw === null) return; // 用户取消
-      const name = (raw || '').trim();
-
-      // 校验：非空
-      if (!name) {
-        alert('参数名不能为空');
-        return;
-      }
-      // 校验：长度 1-3 字符
-      if (name.length < 1 || name.length > 3) {
-        alert('参数名长度必须为 1-3 个字符');
-        return;
-      }
-      // 校验：仅字母
-      if (!/^[a-zA-Z]+$/.test(name)) {
-        alert('参数名只能包含字母（a-z, A-Z）');
-        return;
-      }
-      const nameLower = name.toLowerCase();
-      // 校验：不与保留字冲突
-      const reserved = ['x', 'pi', 'e', 'sin', 'cos', 'tan', 'log', 'sqrt', 'abs', 'exp', 'ln'];
-      if (reserved.indexOf(nameLower) >= 0) {
-        alert(nameLower + ' 是保留字，不能作为参数名');
-        return;
-      }
-      // 校验：不与已有参数重复（自动识别的参数 + customParams）
-      const existing = getActiveParamNames();
-      if (existing.indexOf(nameLower) >= 0) {
-        alert('参数 ' + nameLower + ' 已存在');
-        return;
-      }
-
-      // 校验通过：添加到 customParams
-      const newParam = {
-        name: nameLower,
-        value: PARAM_DEFAULT_VALUE,
-        min: PARAM_DEFAULT_MIN,
-        max: PARAM_DEFAULT_MAX,
-        step: PARAM_DEFAULT_STEP,
-        phase: Math.random() * Math.PI * 2
-      };
-      if (!fps.customParams) fps.customParams = [];
-      fps.customParams.push(newParam);
-
-      // 同步默认值到本地 params 状态
-      params[nameLower] = newParam.value;
-
-      // 重新渲染滑动条并同步到渲染器
-      renderParamSliders();
-      applyParamsToActive();
+      window.showPixelDialog({
+        title: '添加参数',
+        message: '请输入参数名（单个字母，不能用 x / pi / e 等保留字）',
+        inputConfig: { maxlength: 1, placeholder: 'k' },
+        confirmText: '添加',
+        cancelText: '取消',
+        validate: function (inputValue) {
+          const name = (inputValue || '').trim();
+          // (a) 非空
+          if (!name) return '参数名不能为空';
+          // (b) 单个字母
+          if (!/^[a-zA-Z]$/.test(name)) return '参数名必须是单个字母';
+          const nameLower = name.toLowerCase();
+          // (c) 不与保留字冲突
+          const reserved = ['x', 'pi', 'e', 'sin', 'cos', 'tan', 'log', 'sqrt', 'abs', 'exp', 'ln'];
+          if (reserved.indexOf(nameLower) >= 0) return nameLower + ' 是保留字';
+          // (d) 不与已有参数重复（自动识别的参数 + customParams）
+          const existing = getActiveParamNames();
+          if (existing.indexOf(nameLower) >= 0) return '参数 ' + nameLower + ' 已存在';
+          return null;
+        },
+        onConfirm: function (inputValue) {
+          const name = (inputValue || '').trim();
+          const nameLower = name.toLowerCase();
+          // 添加到 customParams
+          const newParam = {
+            name: nameLower,
+            value: PARAM_DEFAULT_VALUE,
+            min: PARAM_DEFAULT_MIN,
+            max: PARAM_DEFAULT_MAX,
+            step: PARAM_DEFAULT_STEP,
+            phase: Math.random() * Math.PI * 2
+          };
+          if (!fps.customParams) fps.customParams = [];
+          fps.customParams.push(newParam);
+          // 同步默认值到本地 params 状态
+          params[nameLower] = newParam.value;
+          // 重新渲染滑动条并同步到渲染器
+          renderParamSliders();
+          applyParamsToActive();
+        }
+      });
     }
 
     function renderParamSliders() {
@@ -4155,6 +4146,63 @@
           try {
             window.Function3D.setExpression(exprCopy || 'sin(a*x)*cos(b*y)');
           } catch (e) { /* ignore */ }
+        }
+
+        // 多参数自动创建确认弹窗（支持显式乘法 y=a*x^2+b*x+c 与隐式乘法 y=ax^2+bx+c）
+        try {
+          if (window.ExpressionParser && result && result.ast) {
+            var paramNames = window.ExpressionParser.extractParams(result.ast);
+            if (paramNames && paramNames.length >= 2) {
+              var existingNames = (function () {
+                var fps0 = window.functionPlotterInstance;
+                if (!fps0 || !fps0.customParams) return {};
+                var map = {};
+                for (var i = 0; i < fps0.customParams.length; i++) {
+                  map[fps0.customParams[i].name] = true;
+                }
+                return map;
+              })();
+              // 过滤掉已存在的参数
+              var toCreate = paramNames.filter(function (n) { return !existingNames[n]; });
+              if (toCreate.length >= 1) {
+                var paramList = paramNames.join(', ');
+                window.showPixelDialog({
+                  title: '检测到多个参数',
+                  message: '检测到该函数包含参数：' + paramList + '。是否自动创建这些参数的滑动条？',
+                  confirmText: '全部创建',
+                  cancelText: '取消',
+                  onConfirm: function () {
+                    var fps = window.functionPlotterInstance;
+                    if (!fps) return;
+                    if (!fps.customParams) fps.customParams = [];
+                    var existing = {};
+                    for (var i = 0; i < fps.customParams.length; i++) {
+                      existing[fps.customParams[i].name] = true;
+                    }
+                    for (var j = 0; j < paramNames.length; j++) {
+                      var name = paramNames[j];
+                      if (existing[name]) continue;
+                      fps.customParams.push({
+                        name: name,
+                        value: 1,
+                        min: -10,
+                        max: 10,
+                        step: 0.1,
+                        phase: Math.random() * Math.PI * 2
+                      });
+                      if (fps.params) fps.params[name] = 1;
+                      params[name] = 1;
+                      existing[name] = true;
+                    }
+                    if (typeof renderParamSliders === 'function') renderParamSliders();
+                    if (typeof applyParamsToActive === 'function') applyParamsToActive();
+                  }
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error('多参数检测失败:', e);
         }
       } else {
         showToast(i18n.t('toast_func_error', { msg: result.error || i18n.t('func_empty_expr') }));
@@ -4476,3 +4524,173 @@
   // ============================================================
   console.log('[app] script loaded');
 })();
+
+/**
+ * showPixelDialog(config)
+ * 自制像素风模态弹窗，替代浏览器原生 prompt() / alert()。
+ * @param {Object} config
+ *   - title: string (弹窗标题)
+ *   - message: string (正文内容)
+ *   - inputConfig: optional { maxlength: number, placeholder: string, initial: string }
+ *   - confirmText: string (默认"确认")
+ *   - cancelText: string (默认"取消")
+ *   - validate: function(inputValue) → string | null  (返回错误信息或 null)
+ *   - onConfirm: function(inputValue) → boolean (返回 false 阻止关闭)
+ *   - onCancel: function() (可选)
+ *   - hideInput: boolean (默认 false；为 true 时不显示输入框)
+ * @returns {Object} 控制句柄 { close: function(), getElement: function() }
+ */
+function showPixelDialog(config) {
+  var overlay = document.createElement('div');
+  overlay.className = 'pixel-dialog-overlay';
+
+  var dialog = document.createElement('div');
+  dialog.className = 'pixel-dialog';
+
+  // Header
+  var header = document.createElement('div');
+  header.className = 'pixel-dialog-header';
+
+  var title = document.createElement('div');
+  title.className = 'pixel-dialog-title';
+  title.textContent = config.title || '';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'pixel-dialog-close';
+  closeBtn.textContent = 'X';
+  closeBtn.setAttribute('aria-label', 'close');
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  // Body
+  var body = document.createElement('div');
+  body.className = 'pixel-dialog-body';
+  if (config.message) {
+    var msg = document.createElement('div');
+    msg.textContent = config.message;
+    body.appendChild(msg);
+  }
+
+  var inputEl = null;
+  var errorEl = null;
+
+  if (!config.hideInput) {
+    inputEl = document.createElement('input');
+    inputEl.className = 'pixel-dialog-input';
+    inputEl.type = 'text';
+    if (config.inputConfig) {
+      if (config.inputConfig.maxlength) {
+        inputEl.maxLength = config.inputConfig.maxlength;
+      }
+      if (config.inputConfig.placeholder) {
+        inputEl.placeholder = config.inputConfig.placeholder;
+      }
+      if (config.inputConfig.initial) {
+        inputEl.value = config.inputConfig.initial;
+      }
+    }
+    body.appendChild(inputEl);
+
+    errorEl = document.createElement('div');
+    errorEl.className = 'pixel-dialog-error';
+    body.appendChild(errorEl);
+  }
+
+  // Actions
+  var actions = document.createElement('div');
+  actions.className = 'pixel-dialog-actions';
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'pixel-dialog-btn';
+  cancelBtn.textContent = config.cancelText || '取消';
+
+  var confirmBtn = document.createElement('button');
+  confirmBtn.className = 'pixel-dialog-btn pixel-dialog-btn-confirm';
+  confirmBtn.textContent = config.confirmText || '确认';
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(confirmBtn);
+
+  dialog.appendChild(header);
+  dialog.appendChild(body);
+  dialog.appendChild(actions);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  // 聚焦输入框
+  if (inputEl) {
+    setTimeout(function () { inputEl.focus(); }, 0);
+  }
+
+  function close() {
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  }
+
+  function showErr(msg) {
+    if (errorEl) {
+      errorEl.textContent = msg || '';
+    }
+  }
+
+  function handleConfirm() {
+    var inputValue = inputEl ? inputEl.value : null;
+    if (typeof config.validate === 'function') {
+      var err = config.validate(inputValue);
+      if (err) {
+        showErr(err);
+        return;
+      }
+    }
+    var shouldClose = true;
+    if (typeof config.onConfirm === 'function') {
+      var result = config.onConfirm(inputValue);
+      if (result === false) shouldClose = false;
+    }
+    if (shouldClose) close();
+  }
+
+  confirmBtn.addEventListener('click', handleConfirm);
+
+  cancelBtn.addEventListener('click', function () {
+    if (typeof config.onCancel === 'function') config.onCancel();
+    close();
+  });
+
+  closeBtn.addEventListener('click', function () {
+    if (typeof config.onCancel === 'function') config.onCancel();
+    close();
+  });
+
+  // 点击遮罩空白处关闭
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) {
+      if (typeof config.onCancel === 'function') config.onCancel();
+      close();
+    }
+  });
+
+  // 回车确认 / ESC 取消
+  if (inputEl) {
+    inputEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        handleConfirm();
+      } else if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        if (typeof config.onCancel === 'function') config.onCancel();
+        close();
+      }
+    });
+  }
+
+  // 把 showPixelDialog 暴露到 window，方便其他模块调用
+  window.showPixelDialog = showPixelDialog;
+
+  return {
+    close: close,
+    getElement: function () { return dialog; }
+  };
+}
