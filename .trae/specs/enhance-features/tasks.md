@@ -12,7 +12,7 @@
 
 ## [x] Task 6: Service Worker 缓存版本升级
 
-## [/] Task 7: 代码提交并推送到 GitHub
+## [x] Task 7: 代码提交并推送到 GitHub
 - **Priority**: high
 - **Depends On**: None
 - **Description**: 

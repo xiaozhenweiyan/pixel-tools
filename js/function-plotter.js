@@ -209,35 +209,52 @@
     drawUnitLength(ctx, w, h, yAxisX, xAxisY) {
       const unitLen = this.getUnitLength();
       const pxLen = this.scale * unitLen;
-      const label = unitLen === 1 ? '1' : unitLen.toFixed(2);
+      const label = unitLen >= 1 ? String(unitLen) : unitLen.toFixed(2);
 
+      ctx.strokeStyle = '#ffd700';
       ctx.fillStyle = '#ffd700';
-      ctx.font = 'bold 10px "Courier New", monospace';
+      ctx.lineWidth = 2;
 
       if (xAxisY >= 0 && xAxisY <= h && yAxisX + pxLen + 40 < w) {
+        var sx = yAxisX + 10;
+        var sy = xAxisY - 12;
         ctx.beginPath();
-        ctx.moveTo(yAxisX + 8, xAxisY - 6);
-        ctx.lineTo(yAxisX + 8 + pxLen, xAxisY - 6);
-        ctx.lineTo(yAxisX + 8 + pxLen, xAxisY);
-        ctx.lineTo(yAxisX + 8, xAxisY);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + pxLen, sy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 3);
+        ctx.lineTo(sx, sy + 3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx + pxLen, sy - 3);
+        ctx.lineTo(sx + pxLen, sy + 3);
+        ctx.stroke();
+        ctx.font = 'bold 10px "Courier New", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(label, yAxisX + 8 + pxLen / 2, xAxisY - 8);
+        ctx.fillText(label, sx + pxLen / 2, sy - 4);
       }
 
       if (yAxisX >= 0 && yAxisX <= w && xAxisY - pxLen - 30 > 0) {
+        var sx2 = yAxisX - 12;
+        var sy2 = xAxisY - 10;
         ctx.beginPath();
-        ctx.moveTo(yAxisX, xAxisY - 8);
-        ctx.lineTo(yAxisX, xAxisY - 8 - pxLen);
-        ctx.lineTo(yAxisX - 6, xAxisY - 8 - pxLen);
-        ctx.lineTo(yAxisX - 6, xAxisY - 8);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(sx2, sy2);
+        ctx.lineTo(sx2, sy2 - pxLen);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx2 - 3, sy2);
+        ctx.lineTo(sx2 + 3, sy2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx2 - 3, sy2 - pxLen);
+        ctx.lineTo(sx2 + 3, sy2 - pxLen);
+        ctx.stroke();
+        ctx.font = 'bold 10px "Courier New", monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, yAxisX + 8, xAxisY - 8 - pxLen / 2);
+        ctx.fillText(label, sx2 + 6, sy2 - pxLen / 2);
       }
     }
 

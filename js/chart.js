@@ -446,6 +446,8 @@ function drawLineChartUnitLength(ctx, L) {
   const xPixels = L.plotR - L.plotL;
   const yPixels = L.plotB - L.plotT;
 
+  if (xRange <= 0 || yRange <= 0) return;
+
   const xScale = xPixels / xRange;
   const yScale = yPixels / yRange;
 
@@ -470,37 +472,54 @@ function drawLineChartUnitLength(ctx, L) {
   const xUnit = findBestUnit(xRawUnits);
   const yUnit = findBestUnit(yRawUnits);
 
+  ctx.strokeStyle = CHART_GOLD;
   ctx.fillStyle = CHART_GOLD;
-  ctx.font = 'bold 10px "Courier New", monospace';
+  ctx.lineWidth = 2;
 
   const xPxLen = xUnit * xScale;
-  const xLabel = xUnit === 1 ? '1' : xUnit.toFixed(2);
+  const xLabel = xUnit >= 1 ? String(xUnit) : xUnit.toFixed(2);
   if (L.plotL + xPxLen + 40 < L.plotR) {
+    var xsx = L.plotL + 14;
+    var xsy = L.plotB - 14;
     ctx.beginPath();
-    ctx.moveTo(L.plotL + 12, L.plotB - 6);
-    ctx.lineTo(L.plotL + 12 + xPxLen, L.plotB - 6);
-    ctx.lineTo(L.plotL + 12 + xPxLen, L.plotB);
-    ctx.lineTo(L.plotL + 12, L.plotB);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(xsx, xsy);
+    ctx.lineTo(xsx + xPxLen, xsy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xsx, xsy - 3);
+    ctx.lineTo(xsx, xsy + 3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xsx + xPxLen, xsy - 3);
+    ctx.lineTo(xsx + xPxLen, xsy + 3);
+    ctx.stroke();
+    ctx.font = 'bold 10px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(xLabel, L.plotL + 12 + xPxLen / 2, L.plotB - 8);
+    ctx.fillText(xLabel, xsx + xPxLen / 2, xsy - 4);
   }
 
   const yPxLen = yUnit * yScale;
-  const yLabel = yUnit === 1 ? '1' : yUnit.toFixed(2);
+  const yLabel = yUnit >= 1 ? String(yUnit) : yUnit.toFixed(2);
   if (L.plotT + yPxLen + 30 < L.plotB) {
+    var ysx = L.plotL + 14;
+    var ysy = L.plotB - 18;
     ctx.beginPath();
-    ctx.moveTo(L.plotL, L.plotB - 12);
-    ctx.lineTo(L.plotL, L.plotB - 12 - yPxLen);
-    ctx.lineTo(L.plotL + 6, L.plotB - 12 - yPxLen);
-    ctx.lineTo(L.plotL + 6, L.plotB - 12);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(ysx, ysy);
+    ctx.lineTo(ysx, ysy - yPxLen);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ysx - 3, ysy);
+    ctx.lineTo(ysx + 3, ysy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ysx - 3, ysy - yPxLen);
+    ctx.lineTo(ysx + 3, ysy - yPxLen);
+    ctx.stroke();
+    ctx.font = 'bold 10px "Courier New", monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(yLabel, L.plotL + 10, L.plotB - 12 - yPxLen / 2);
+    ctx.fillText(yLabel, ysx + 6, ysy - yPxLen / 2);
   }
 }
 
