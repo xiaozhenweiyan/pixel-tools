@@ -1527,31 +1527,36 @@ footer.pixel-panel p {
   margin: 6px 0;
 }
 
-/* 教程按钮 / Tutorial Button */
+/* 教程按钮 / Tutorial Button - 固定在视口底部 */
 .tutorial-btn {
-  display: block;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   width: calc(100% - 40px);
   max-width: 400px;
-  margin: 20px auto;
   padding: 12px;
   text-align: center;
   background: #2d2d44;
-  border: 3px solid #ffffff;
+  border: 3px solid #ffd700;
   border-radius: 4px;
-  color: #ffffff;
+  color: #ffd700;
   font-family: "Courier New", Courier, monospace;
   font-weight: bold;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   font-size: 14px;
   cursor: pointer;
   transition: background 0.05s;
   box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  z-index: 9000;
+  display: block;
 }
 .tutorial-btn:hover {
   background: #3d3d54;
+  color: #ffffff;
 }
 .tutorial-btn:active {
-  transform: translate(2px, 2px);
+  transform: translateX(-50%) translate(2px, 2px);
   box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
 }
 

@@ -4,13 +4,13 @@
  *
  * 策略说明：
  *   - HTML 文档：Network-First（优先网络，确保用户拿到最新版本）
- *   - JS/CSS 静态资源：Stale-While-Revalidate（先返回缓存快速响应，后台同步更新）
- *   - 第三方 CDN（如 p5.js）：Cache-First（跨域资源，缓存优先）
+ *   - JS/CSS/图片等静态资源：Network-First（优先网络，避免 SWR 导致刷新两次才生效）
+ *   - 第三方 CDN（如 p5.js）：Cache-First（跨域资源，缓存优先，离线兜底）
  *
  * 每次部署后必须升级 CACHE_NAME 版本号，确保旧缓存被清除。
  */
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = 'pixel-tools-' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -144,26 +144,23 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // JS/CSS/图片等静态资源：Stale-While-Revalidate
-  // 先返回缓存（快速），同时后台拉取最新版本更新缓存
+  // JS/CSS/图片等静态资源：Network-First
+  // 优先网络，确保用户每次刷新都能拿到最新版本；离线时回退缓存
   event.respondWith(
-    caches.match(request).then(function (cached) {
-      const fetchPromise = fetch(request).then(function (response) {
-        if (response && response.status === 200 && response.type !== 'opaque') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
-            cache.put(request, clone).catch(function () {});
-          });
-        }
-        return response;
-      }).catch(function () {
-        // 网络失败，如果有缓存就用缓存，否则抛错
+    fetch(request).then(function (response) {
+      if (response && response.status === 200 && response.type !== 'opaque') {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(function (cache) {
+          cache.put(request, clone).catch(function () {});
+        });
+      }
+      return response;
+    }).catch(function () {
+      // 网络失败，回退到缓存
+      return caches.match(request).then(function (cached) {
         if (cached) return cached;
         throw new Error('Network failed and no cache');
       });
-
-      // 如果有缓存，先返回缓存；否则等网络响应
-      return cached || fetchPromise;
     })
   );
 });
