@@ -2365,26 +2365,30 @@
 
   // 所有页面 ID 清单（统一管理，避免遗漏）
   var PAGE_IDS = [
-    'app-landing-page',     // 工具首页
-    'landing-page',         // 像素数学首页
-    'learning-landing-page',// 学习系统首页
-    'predictor-page',       // 预测系统
-    'calculator-page',      // 计算机系统
-    'function-page',        // 函数系统
-    'pixel-art-page',       // 像素艺术生成器
-    'pixel-drawing-page',   // 像素绘图编辑器
-    'pixel-music-page',     // 像素音乐合成器
-    'arithmetic-page',      // 四则运算学习卡片
-    'mixed-arithmetic-page',// 混合运算学习卡片
-    'maze-page',            // 像素迷宫
-    'function-3d-page',     // 函数3D
-    'nn-visualizer-page',   // 神经网络可视化
-    'math-ext-page',        // 数学卡片扩展
-    'physics-page',         // 物理模拟器
-    'pixelizer-page',       // AI图像像素化
-    'clock-page',           // 像素时钟
-    'rpg-page',             // 像素RPG
-    'settings-page'         // 设置页
+    'app-landing-page',                  // 工具首页
+    'landing-page',                      // 像素数学首页
+    'learning-landing-page',             // 学习系统首页
+    'pixel-programming-landing-page',    // 像素编程首页
+    'predictor-page',                    // 预测系统
+    'calculator-page',                   // 计算机系统
+    'function-page',                     // 函数系统（含 2D/3D 切换）
+    'pixel-art-page',                    // 像素艺术生成器
+    'pixel-drawing-page',                // 像素绘图编辑器
+    'pixel-music-page',                  // 像素音乐合成器
+    'arithmetic-page',                   // 四则运算学习卡片
+    'mixed-arithmetic-page',             // 混合运算学习卡片
+    'fraction-page',                     // 分数学习卡片
+    'decimal-page',                      // 小数学习卡片
+    'equation-page',                     // 方程学习卡片
+    'geometry-page',                     // 几何学习卡片
+    'speed-page',                         // 速算挑战卡片
+    'maze-page',                          // 像素迷宫
+    'nn-visualizer-page',                // 神经网络可视化
+    'physics-page',                       // 物理模拟器
+    'pixelizer-page',                     // AI图像像素化
+    'clock-page',                         // 像素时钟
+    'rpg-page',                           // 像素RPG
+    'settings-page'                      // 设置页
   ];
 
   // 用 active 类显示的页面
@@ -2397,9 +2401,7 @@
     'pixel-drawing-page': true,
     'pixel-music-page': true,
     'maze-page': true,
-    'function-3d-page': true,
     'nn-visualizer-page': true,
-    'math-ext-page': true,
     'physics-page': true,
     'pixelizer-page': true,
     'clock-page': true,
@@ -2407,12 +2409,84 @@
     'settings-page': true
   };
 
-  // 用 hidden 类隐藏的页面（landing-page, learning-landing-page, arithmetic-page, mixed-arithmetic-page）
+  // 用 hidden 类隐藏的页面（landing-page, learning-landing-page, arithmetic-page, mixed-arithmetic-page 等）
   var HIDDEN_PAGES = {
     'landing-page': true,
     'learning-landing-page': true,
+    'pixel-programming-landing-page': true,
     'arithmetic-page': true,
-    'mixed-arithmetic-page': true
+    'mixed-arithmetic-page': true,
+    'fraction-page': true,
+    'decimal-page': true,
+    'equation-page': true,
+    'geometry-page': true,
+    'speed-page': true
+  };
+
+  // ============================================================
+  // 首页增强：分类折叠、最近使用、ESC 返回上一级
+  // Home enhancements: category collapse, recent tools, ESC back
+  // ============================================================
+
+  // 折叠状态 localStorage key / collapse state storage key
+  var CATEGORY_COLLAPSE_KEY = 'pixel_category_collapsed';
+  // 最近使用工具 localStorage key / recent tools storage key
+  var RECENT_TOOLS_KEY = 'recent_tools';
+  // 最近使用最多记录数 / max recent tools count
+  var RECENT_TOOLS_MAX = 3;
+
+  // 页面历史栈：记录用户访问路径，ESC 弹出返回上一级
+  // Page history stack: track navigation path; ESC pops & goes back
+  var pageHistoryStack = ['app-landing-page'];
+  // 抑制压栈标志：ESC/返回时设为 true，避免重复压栈
+  // Suppress-push flag: set true during ESC/back navigation
+  var _suppressHistoryPush = false;
+
+  // 需要记录到"最近使用"的工具页面 / pages tracked as recent tools
+  var RECENT_TRACKED_PAGES = {
+    'predictor-page': true,
+    'calculator-page': true,
+    'function-page': true,
+    'pixel-art-page': true,
+    'pixel-drawing-page': true,
+    'pixel-music-page': true,
+    'arithmetic-page': true,
+    'mixed-arithmetic-page': true,
+    'fraction-page': true,
+    'decimal-page': true,
+    'equation-page': true,
+    'geometry-page': true,
+    'speed-page': true,
+    'maze-page': true,
+    'nn-visualizer-page': true,
+    'physics-page': true,
+    'pixelizer-page': true,
+    'clock-page': true,
+    'rpg-page': true
+  };
+
+  // 页面 ID → 入口按钮 ID 与 i18n 键映射 / page → entry button & i18n key map
+  // 用于在"最近使用"区域复用入口按钮的图标和点击行为
+  var PAGE_TO_INFO = {
+    'predictor-page':       { btnId: 'btn-enter-predictor',         titleKey: 'card_predictor_title',       descKey: 'card_predictor_desc' },
+    'calculator-page':      { btnId: 'btn-enter-calculator',        titleKey: 'card_calculator_title',      descKey: 'card_calculator_desc' },
+    'function-page':        { btnId: 'btn-enter-function',          titleKey: 'card_function_title',        descKey: 'card_function_desc' },
+    'pixel-art-page':       { btnId: 'btn-enter-pixel-art',         titleKey: 'card_pixel_art_title',       descKey: 'card_pixel_art_desc' },
+    'pixel-drawing-page':   { btnId: 'btn-enter-pixel-draw-editor', titleKey: 'card_pixel_draw_title',      descKey: 'card_pixel_draw_desc' },
+    'pixel-music-page':     { btnId: 'btn-enter-pixel-music',       titleKey: 'card_pixel_music_title',     descKey: 'card_pixel_music_desc' },
+    'arithmetic-page':      { btnId: 'btn-enter-arithmetic',        titleKey: 'card_arithmetic_title',      descKey: 'card_arithmetic_desc' },
+    'mixed-arithmetic-page':{ btnId: 'btn-enter-mixed',             titleKey: 'card_mixed_title',           descKey: 'card_mixed_desc' },
+    'fraction-page':        { btnId: 'btn-enter-fraction',          titleKey: 'card_fraction_title',        descKey: 'card_fraction_desc' },
+    'decimal-page':         { btnId: 'btn-enter-decimal',           titleKey: 'card_decimal_title',         descKey: 'card_decimal_desc' },
+    'equation-page':        { btnId: 'btn-enter-equation',          titleKey: 'card_equation_title',        descKey: 'card_equation_desc' },
+    'geometry-page':        { btnId: 'btn-enter-geometry',          titleKey: 'card_geometry_title',        descKey: 'card_geometry_desc' },
+    'speed-page':           { btnId: 'btn-enter-speed',             titleKey: 'card_speed_title',           descKey: 'card_speed_desc' },
+    'maze-page':            { btnId: 'btn-enter-maze',              titleKey: 'card_maze_title',            descKey: 'card_maze_desc' },
+    'nn-visualizer-page':   { btnId: 'btn-enter-nn-visualizer',     titleKey: 'card_nnvis_title',           descKey: 'card_nnvis_desc' },
+    'physics-page':         { btnId: 'btn-enter-physics',           titleKey: 'card_physics_title',         descKey: 'card_physics_desc' },
+    'pixelizer-page':       { btnId: 'btn-enter-pixelizer',         titleKey: 'card_pixelizer_title',       descKey: 'card_pixelizer_desc' },
+    'clock-page':           { btnId: 'btn-enter-clock',             titleKey: 'card_clock_title',           descKey: 'card_clock_desc' },
+    'rpg-page':             { btnId: 'btn-enter-rpg',               titleKey: 'card_rpg_title',             descKey: 'card_rpg_desc' }
   };
 
   // 统一隐藏所有页面（清除 active 和 hidden 类的状态）
@@ -2431,6 +2505,7 @@
   }
 
   // 显示指定页面（先隐藏全部，再显示目标）
+  // 同时维护页面历史栈与"最近使用"记录
   function showPage(pageId) {
     hideAllPages();
     var el = document.getElementById(pageId);
@@ -2439,6 +2514,25 @@
       el.classList.add('active');
     } else if (HIDDEN_PAGES[pageId]) {
       el.classList.remove('hidden');
+    }
+
+    // —— 历史栈维护 / history stack maintenance ——
+    if (pageId === 'app-landing-page') {
+      // 回到首页：清空栈只保留根 / back to root: reset stack
+      pageHistoryStack = ['app-landing-page'];
+    } else if (!_suppressHistoryPush) {
+      // 如果目标页已在栈中，回退到该位置（避免重复入栈）
+      // If target page already in stack, truncate to it (avoid dupes)
+      var existingIdx = pageHistoryStack.lastIndexOf(pageId);
+      if (existingIdx >= 0) {
+        pageHistoryStack = pageHistoryStack.slice(0, existingIdx + 1);
+      } else {
+        pageHistoryStack.push(pageId);
+      }
+      // 记录"最近使用"工具 / record recent tool
+      if (RECENT_TRACKED_PAGES[pageId]) {
+        recordRecentTool(pageId);
+      }
     }
   }
 
@@ -2450,6 +2544,8 @@
     showPage('app-landing-page');
     // 停止后台运行的工具 / stop background tools
     stopBackgroundTools();
+    // 渲染"最近使用"区域 / render recent tools area
+    renderRecentTools();
   }
 
   function showPredictor() {
@@ -2514,6 +2610,10 @@
     showPage('learning-landing-page');
   }
 
+  function showPixelProgrammingLanding() {
+    showPage('pixel-programming-landing-page');
+  }
+
   function showArithmetic() {
     showPage('arithmetic-page');
     if (window.MathCards && typeof window.MathCards.init === 'function') {
@@ -2525,6 +2625,63 @@
     showPage('mixed-arithmetic-page');
     if (window.MathCards && typeof window.MathCards.initMixed === 'function') {
       window.MathCards.initMixed();
+    }
+  }
+
+  // ---------- 数学卡片扩展（独立页面） / Math Cards Ext (separated pages) ----------
+  // 分数学习卡片
+  function showFraction() {
+    showPage('fraction-page');
+    if (window.MathCardsExt && typeof window.MathCardsExt.initFraction === 'function') {
+      const canvas = document.getElementById('fraction-canvas');
+      if (canvas) {
+        try { window.MathCardsExt.initFraction(canvas); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  // 小数学习卡片
+  function showDecimal() {
+    showPage('decimal-page');
+    if (window.MathCardsExt && typeof window.MathCardsExt.initDecimal === 'function') {
+      const canvas = document.getElementById('decimal-canvas');
+      if (canvas) {
+        try { window.MathCardsExt.initDecimal(canvas); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  // 方程学习卡片
+  function showEquation() {
+    showPage('equation-page');
+    if (window.MathCardsExt && typeof window.MathCardsExt.initEquation === 'function') {
+      const canvas = document.getElementById('equation-canvas');
+      if (canvas) {
+        try { window.MathCardsExt.initEquation(canvas); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  // 几何学习卡片
+  function showGeometry() {
+    showPage('geometry-page');
+    if (window.MathCardsExt && typeof window.MathCardsExt.initGeometry === 'function') {
+      const canvas = document.getElementById('geometry-canvas');
+      if (canvas) {
+        try { window.MathCardsExt.initGeometry(canvas); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  // 速算挑战卡片
+  function showSpeed() {
+    showPage('speed-page');
+    if (window.MathCardsExt && typeof window.MathCardsExt.initSpeedChallenge === 'function') {
+      const canvas = document.getElementById('speed-canvas');
+      const lbList = document.getElementById('speed-leaderboard-list');
+      if (canvas) {
+        try { window.MathCardsExt.initSpeedChallenge(canvas, lbList); } catch (e) { /* ignore */ }
+      }
     }
   }
 
@@ -2593,84 +2750,6 @@
     doGenerate();
   }
 
-  // ---------- 函数3D / Function 3D ----------
-  function showFunction3D() {
-    stopBackgroundTools();
-    showPage('function-3d-page');
-    setTimeout(initFunction3DTool, 50);
-  }
-
-  function initFunction3DTool() {
-    if (initFlags.function3d) return;
-    initFlags.function3d = true;
-    const canvas = document.getElementById('function-3d-canvas');
-    if (!canvas || !window.Function3D) return;
-    window.Function3D.init(canvas);
-
-    const input = document.getElementById('function-3d-input');
-    const applyBtn = document.getElementById('btn-function-3d-apply');
-    const resetBtn = document.getElementById('btn-function-3d-reset');
-    const paramsEl = document.getElementById('function-3d-params');
-
-    function renderParams() {
-      if (!paramsEl) return;
-      while (paramsEl.firstChild) paramsEl.removeChild(paramsEl.firstChild);
-      if (typeof window.Function3D.getParams !== 'function') return;
-      let info;
-      try { info = window.Function3D.getParams(); } catch (e) { return; }
-      if (!info || !info.names || info.names.length === 0) return;
-
-      for (let i = 0; i < info.names.length; i++) {
-        const name = info.names[i];
-        const val = info.values[i];
-
-        const item = document.createElement('div');
-        item.className = 'function-3d-param-item';
-
-        const label = document.createElement('label');
-        label.className = 'function-3d-param-label';
-        label.textContent = name + ' = ' + (Number.isFinite(val) ? val.toFixed(2) : String(val));
-
-        const slider = document.createElement('input');
-        slider.type = 'range';
-        slider.className = 'pixel-input';
-        slider.min = '-5';
-        slider.max = '5';
-        slider.step = '0.1';
-        slider.value = String(val);
-        slider.addEventListener('input', function () {
-          const v = parseFloat(this.value);
-          if (!Number.isFinite(v)) return;
-          const obj = {};
-          obj[name] = v;
-          window.Function3D.setParams(obj);
-          label.textContent = name + ' = ' + v.toFixed(2);
-        });
-
-        item.appendChild(label);
-        item.appendChild(slider);
-        paramsEl.appendChild(item);
-      }
-    }
-
-    function applyExpr() {
-      if (!input || !input.value || !input.value.trim()) return;
-      window.Function3D.setExpression(input.value);
-      renderParams();
-    }
-
-    if (applyBtn) applyBtn.addEventListener('click', applyExpr);
-    if (input) input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); applyExpr(); }
-    });
-    if (resetBtn) resetBtn.addEventListener('click', function () {
-      window.Function3D.reset();
-    });
-
-    // 应用初始表达式
-    applyExpr();
-  }
-
   // ---------- 神经网络可视化 / NN Visualizer ----------
   function showNNVisualizer() {
     stopBackgroundTools();
@@ -2693,6 +2772,72 @@
     const stopBtn = document.getElementById('btn-nnvis-stop');
     const resetBtn = document.getElementById('btn-nnvis-reset');
 
+    // 训练集编辑器元素 / Dataset editor elements
+    const datasetCanvas = document.getElementById('nnvis-dataset-canvas');
+    const datasetCtx = datasetCanvas ? datasetCanvas.getContext('2d') : null;
+    const sampleInput = document.getElementById('nnvis-sample-input');
+    const addSampleBtn = document.getElementById('btn-nnvis-add-sample');
+    const clearDatasetBtn = document.getElementById('btn-nnvis-clear-dataset');
+    const importJsonBtn = document.getElementById('btn-nnvis-import-json');
+    const exportJsonBtn = document.getElementById('btn-nnvis-export-json');
+    const importFileInput = document.getElementById('nnvis-import-file');
+    const sampleListEl = document.getElementById('nnvis-sample-list');
+
+    // 获取 i18n 文本（带 fallback）
+    function tt(key, fallback) {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        try { return window.i18n.t(key); } catch (e) { /* ignore */ }
+      }
+      return fallback;
+    }
+
+    // 刷新训练集散点图
+    function refreshScatter() {
+      if (datasetCtx && datasetCanvas && window.NNVisualizer.drawDataset) {
+        try { window.NNVisualizer.drawDataset(datasetCtx, datasetCanvas); } catch (e) { /* ignore */ }
+      }
+    }
+
+    // 渲染样本列表（含删除按钮）
+    function renderSampleList() {
+      if (!sampleListEl) return;
+      const dataset = window.NNVisualizer.getDataset();
+      sampleListEl.innerHTML = '';
+      if (!dataset || dataset.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'nnvis-sample-empty';
+        empty.textContent = tt('nnvis_no_samples', '— 暂无样本 —');
+        sampleListEl.appendChild(empty);
+        return;
+      }
+      for (let i = 0; i < dataset.length; i++) {
+        const sample = dataset[i];
+        const row = document.createElement('div');
+        row.className = 'nnvis-sample-item';
+        const idx = document.createElement('span');
+        idx.className = 'nnvis-sample-idx';
+        idx.textContent = (i + 1) + '.';
+        const text = document.createElement('span');
+        text.className = 'nnvis-sample-text';
+        text.textContent = '[' + sample.join(', ') + ']';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'nnvis-sample-del';
+        delBtn.textContent = '×';
+        delBtn.title = '删除';
+        delBtn.dataset.index = String(i);
+        row.appendChild(idx);
+        row.appendChild(text);
+        row.appendChild(delBtn);
+        sampleListEl.appendChild(row);
+      }
+    }
+
+    // 刷新散点图 + 样本列表
+    function refreshDatasetView() {
+      refreshScatter();
+      renderSampleList();
+    }
+
     function applyStructure() {
       if (!structInput || !structInput.value || !structInput.value.trim()) return;
       const parts = structInput.value.split(',').map(function (s) {
@@ -2708,19 +2853,24 @@
 
     if (structInput) structInput.addEventListener('change', applyStructure);
 
+    // 数据集切换：加载对应训练集并刷新散点图
+    if (datasetSel) {
+      try { window.NNVisualizer.selectDataset(datasetSel.value || 'xor'); } catch (e) { /* ignore */ }
+      datasetSel.addEventListener('change', function () {
+        try { window.NNVisualizer.selectDataset(datasetSel.value); } catch (e) { /* ignore */ }
+        refreshDatasetView();
+      });
+    }
+
+    // 训练按钮：使用当前训练集（传副本，避免训练中编辑导致空数组）
     if (trainBtn) trainBtn.addEventListener('click', function () {
-      const ds = datasetSel ? datasetSel.value : 'xor';
       const lr = lrInput ? (parseFloat(lrInput.value) || 0.3) : 0.3;
-      let dataset = null;
-      if (window.NNVisualizer.datasets) {
-        if (ds === 'sine' && typeof window.NNVisualizer.datasets.sine === 'function') {
-          try { dataset = window.NNVisualizer.datasets.sine(); } catch (e) { dataset = null; }
-        } else if (window.NNVisualizer.datasets.xor) {
-          dataset = window.NNVisualizer.datasets.xor;
-        }
-      }
-      if (dataset) {
-        try { window.NNVisualizer.train(dataset, 10000, lr); } catch (e) { /* ignore */ }
+      const dataset = window.NNVisualizer.getDataset();
+      if (dataset && dataset.length > 0) {
+        const snapshot = dataset.map(function (s) {
+          return Array.isArray(s) ? s.slice() : s;
+        });
+        try { window.NNVisualizer.train(snapshot, 10000, lr); } catch (e) { /* ignore */ }
       }
     });
 
@@ -2730,50 +2880,95 @@
     if (resetBtn) resetBtn.addEventListener('click', function () {
       window.NNVisualizer.reset();
     });
-  }
 
-  // ---------- 数学卡片扩展 / Math Cards Ext ----------
-  function showMathExt() {
-    stopBackgroundTools();
-    showPage('math-ext-page');
-    setTimeout(initMathExtTool, 50);
-  }
-
-  function initMathExtTool() {
-    if (initFlags.mathext) return;
-    initFlags.mathext = true;
-    const canvas = document.getElementById('mathext-canvas');
-    if (!canvas || !window.MathCardsExt) return;
-
-    const tabs = document.querySelectorAll('.mathext-tab');
-
-    function switchMode(mode) {
-      for (let i = 0; i < tabs.length; i++) {
-        tabs[i].classList.toggle('active', tabs[i].getAttribute('data-mode') === mode);
-      }
+    // 添加样本：解析 "x1,x2,output" 输入
+    function addSampleFromInput() {
+      if (!sampleInput) return;
+      const raw = sampleInput.value.trim();
+      if (!raw) return;
+      const parts = raw.split(',').map(function (s) {
+        const n = parseFloat(s.trim());
+        return isNaN(n) ? 0 : n;
+      });
+      if (parts.length < 2) return;
       try {
-        if (mode === 'fraction' && typeof window.MathCardsExt.initFraction === 'function') {
-          window.MathCardsExt.initFraction(canvas);
-        } else if (mode === 'decimal' && typeof window.MathCardsExt.initDecimal === 'function') {
-          window.MathCardsExt.initDecimal(canvas);
-        } else if (mode === 'equation' && typeof window.MathCardsExt.initEquation === 'function') {
-          window.MathCardsExt.initEquation(canvas);
-        } else if (mode === 'geometry' && typeof window.MathCardsExt.initGeometry === 'function') {
-          window.MathCardsExt.initGeometry(canvas);
-        } else if (mode === 'speed' && typeof window.MathCardsExt.initSpeedChallenge === 'function') {
-          window.MathCardsExt.initSpeedChallenge(canvas);
-        }
+        window.NNVisualizer.addSample(parts);
+        sampleInput.value = '';
+        refreshDatasetView();
       } catch (e) { /* ignore */ }
     }
 
-    for (let i = 0; i < tabs.length; i++) {
-      tabs[i].addEventListener('click', function () {
-        switchMode(this.getAttribute('data-mode'));
+    if (addSampleBtn) addSampleBtn.addEventListener('click', addSampleFromInput);
+    if (sampleInput) sampleInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        addSampleFromInput();
+      }
+    });
+
+    // 样本列表删除（事件委托）
+    if (sampleListEl) sampleListEl.addEventListener('click', function (e) {
+      const target = e.target;
+      if (target && target.classList && target.classList.contains('nnvis-sample-del')) {
+        const idx = parseInt(target.dataset.index, 10);
+        if (!isNaN(idx)) {
+          try { window.NNVisualizer.removeSample(idx); } catch (e2) { /* ignore */ }
+          refreshDatasetView();
+        }
+      }
+    });
+
+    // 清空当前训练集
+    if (clearDatasetBtn) clearDatasetBtn.addEventListener('click', function () {
+      try { window.NNVisualizer.clearDataset(); } catch (e) { /* ignore */ }
+      refreshDatasetView();
+    });
+
+    // 导出 JSON：下载当前训练集为文件
+    if (exportJsonBtn) exportJsonBtn.addEventListener('click', function () {
+      try {
+        const dataset = window.NNVisualizer.getDataset();
+        const json = JSON.stringify(dataset, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'nnvis-dataset.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) { /* ignore */ }
+    });
+
+    // 导入 JSON：读取文件并设置为自定义训练集
+    if (importJsonBtn && importFileInput) {
+      importJsonBtn.addEventListener('click', function () {
+        importFileInput.click();
+      });
+      importFileInput.addEventListener('change', function () {
+        const file = importFileInput.files && importFileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          try {
+            const text = ev.target && ev.target.result ? String(ev.target.result) : '';
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+              window.NNVisualizer.setDataset(parsed);
+              if (datasetSel) datasetSel.value = 'custom';
+              refreshDatasetView();
+            }
+          } catch (err) { /* ignore */ }
+          importFileInput.value = '';
+        };
+        reader.onerror = function () { importFileInput.value = ''; };
+        reader.readAsText(file);
       });
     }
 
-    // 默认进入分数模式
-    switchMode('fraction');
+    // 首次渲染训练集视图
+    refreshDatasetView();
   }
 
   // ---------- 物理模拟器 / Physics Sandbox ----------
@@ -3023,42 +3218,296 @@
     if (btnEnterArithmetic) btnEnterArithmetic.addEventListener('click', showArithmetic);
     if (btnEnterMixed) btnEnterMixed.addEventListener('click', showMixedArithmetic);
 
+    // 像素编程首页 / Pixel Programming Landing
+    const btnEnterPixelProgramming = document.getElementById('btn-enter-pixel-programming');
+    const btnBackToToolsFromProg = document.getElementById('btn-back-to-tools-from-prog');
+    if (btnEnterPixelProgramming) btnEnterPixelProgramming.addEventListener('click', showPixelProgrammingLanding);
+    if (btnBackToToolsFromProg) btnBackToToolsFromProg.addEventListener('click', showAppLanding);
+
+    // 数学卡片扩展独立页面 / Math Cards Ext (separated pages)
+    const btnEnterFraction = document.getElementById('btn-enter-fraction');
+    const btnEnterDecimal = document.getElementById('btn-enter-decimal');
+    const btnEnterEquation = document.getElementById('btn-enter-equation');
+    const btnEnterGeometry = document.getElementById('btn-enter-geometry');
+    const btnEnterSpeed = document.getElementById('btn-enter-speed');
+    const btnBackToLearningFraction = document.getElementById('btn-back-to-learning-fraction');
+    const btnBackToLearningDecimal = document.getElementById('btn-back-to-learning-decimal');
+    const btnBackToLearningEquation = document.getElementById('btn-back-to-learning-equation');
+    const btnBackToLearningGeometry = document.getElementById('btn-back-to-learning-geometry');
+    const btnBackToLearningSpeed = document.getElementById('btn-back-to-learning-speed');
+    if (btnEnterFraction) btnEnterFraction.addEventListener('click', showFraction);
+    if (btnEnterDecimal) btnEnterDecimal.addEventListener('click', showDecimal);
+    if (btnEnterEquation) btnEnterEquation.addEventListener('click', showEquation);
+    if (btnEnterGeometry) btnEnterGeometry.addEventListener('click', showGeometry);
+    if (btnEnterSpeed) btnEnterSpeed.addEventListener('click', showSpeed);
+    if (btnBackToLearningFraction) btnBackToLearningFraction.addEventListener('click', showLearningLanding);
+    if (btnBackToLearningDecimal) btnBackToLearningDecimal.addEventListener('click', showLearningLanding);
+    if (btnBackToLearningEquation) btnBackToLearningEquation.addEventListener('click', showLearningLanding);
+    if (btnBackToLearningGeometry) btnBackToLearningGeometry.addEventListener('click', showLearningLanding);
+    if (btnBackToLearningSpeed) btnBackToLearningSpeed.addEventListener('click', showLearningLanding);
+
     // 新工具卡片点击事件 / new tool card click events
     const btnEnterMaze = document.getElementById('btn-enter-maze');
-    const btnEnterFunction3D = document.getElementById('btn-enter-function-3d');
     const btnEnterNNVis = document.getElementById('btn-enter-nn-visualizer');
-    const btnEnterMathExt = document.getElementById('btn-enter-math-ext');
     const btnEnterPhysics = document.getElementById('btn-enter-physics');
     const btnEnterPixelizer = document.getElementById('btn-enter-pixelizer');
     const btnEnterClock = document.getElementById('btn-enter-clock');
     const btnEnterRPG = document.getElementById('btn-enter-rpg');
     if (btnEnterMaze) btnEnterMaze.addEventListener('click', showMaze);
-    if (btnEnterFunction3D) btnEnterFunction3D.addEventListener('click', showFunction3D);
     if (btnEnterNNVis) btnEnterNNVis.addEventListener('click', showNNVisualizer);
-    if (btnEnterMathExt) btnEnterMathExt.addEventListener('click', showMathExt);
     if (btnEnterPhysics) btnEnterPhysics.addEventListener('click', showPhysics);
     if (btnEnterPixelizer) btnEnterPixelizer.addEventListener('click', showPixelizer);
     if (btnEnterClock) btnEnterClock.addEventListener('click', showClock);
     if (btnEnterRPG) btnEnterRPG.addEventListener('click', showRPG);
 
-    // 新工具返回首页按钮 / new tool back-to-home buttons
+    // 新工具返回按钮 / new tool back buttons
+    // 像素迷宫、神经网络可视化：返回像素编程首页 / Maze & NN Vis: back to Pixel Programming
     const btnBackHomeMaze = document.getElementById('btn-back-home-maze');
-    const btnBackHomeFunction3D = document.getElementById('btn-back-home-function-3d');
     const btnBackHomeNN = document.getElementById('btn-back-home-nn');
-    const btnBackHomeMathExt = document.getElementById('btn-back-home-math-ext');
     const btnBackHomePhysics = document.getElementById('btn-back-home-physics');
     const btnBackHomePixelizer = document.getElementById('btn-back-home-pixelizer');
     const btnBackHomeClock = document.getElementById('btn-back-home-clock');
     const btnBackHomeRPG = document.getElementById('btn-back-home-rpg');
-    if (btnBackHomeMaze) btnBackHomeMaze.addEventListener('click', showAppLanding);
-    if (btnBackHomeFunction3D) btnBackHomeFunction3D.addEventListener('click', showAppLanding);
-    if (btnBackHomeNN) btnBackHomeNN.addEventListener('click', showAppLanding);
-    if (btnBackHomeMathExt) btnBackHomeMathExt.addEventListener('click', showAppLanding);
+    if (btnBackHomeMaze) btnBackHomeMaze.addEventListener('click', showPixelProgrammingLanding);
+    if (btnBackHomeNN) btnBackHomeNN.addEventListener('click', showPixelProgrammingLanding);
     if (btnBackHomePhysics) btnBackHomePhysics.addEventListener('click', showAppLanding);
     if (btnBackHomePixelizer) btnBackHomePixelizer.addEventListener('click', showAppLanding);
     if (btnBackHomeClock) btnBackHomeClock.addEventListener('click', showAppLanding);
     if (btnBackHomeRPG) btnBackHomeRPG.addEventListener('click', showAppLanding);
   }
+
+  // ============================================================
+  // 首页增强：分类折叠 / Category Collapse
+  // ============================================================
+
+  /**
+   * initCategoryCollapse()
+   * 给首页 4 个分类标题绑定点击折叠/展开事件，从 localStorage 恢复状态。
+   * Bind click handlers on the 4 category titles for collapse/expand,
+   * restoring saved state from localStorage.
+   */
+  function initCategoryCollapse() {
+    const titles = document.querySelectorAll('.app-landing-category-title[data-category]');
+    if (!titles || titles.length === 0) return;
+
+    // 读取已保存的折叠状态 / load saved collapsed state
+    let saved = {};
+    try {
+      const raw = localStorage.getItem(CATEGORY_COLLAPSE_KEY);
+      if (raw) saved = JSON.parse(raw) || {};
+    } catch (e) { saved = {}; }
+
+    titles.forEach(function (titleEl) {
+      const cat = titleEl.getAttribute('data-category');
+      const categoryEl = titleEl.parentElement;  // .app-landing-category
+      // 应用初始折叠状态 / apply initial collapsed state
+      if (saved[cat] && categoryEl) {
+        categoryEl.classList.add('collapsed');
+      }
+      titleEl.addEventListener('click', function () {
+        if (!categoryEl) return;
+        const isCollapsed = categoryEl.classList.toggle('collapsed');
+        // 持久化 / persist
+        try {
+          let state = {};
+          try { state = JSON.parse(localStorage.getItem(CATEGORY_COLLAPSE_KEY) || '{}') || {}; } catch (e) {}
+          state[cat] = isCollapsed;
+          localStorage.setItem(CATEGORY_COLLAPSE_KEY, JSON.stringify(state));
+        } catch (e) { /* ignore quota errors */ }
+      });
+    });
+  }
+
+  // ============================================================
+  // 首页增强：最近使用 / Recent Tools
+  // ============================================================
+
+  /**
+   * recordRecentTool(pageId)
+   * 将访问的工具页面记录到 localStorage 'recent_tools' 中。
+   * 同一工具重复访问会移动到队首，最多保留 RECENT_TOOLS_MAX 个。
+   * Record visited tool page to localStorage 'recent_tools'.
+   * Revisits move to front; only RECENT_TOOLS_MAX entries kept.
+   */
+  function recordRecentTool(pageId) {
+    if (!pageId || !PAGE_TO_INFO[pageId]) return;
+    let list = [];
+    try {
+      const raw = localStorage.getItem(RECENT_TOOLS_KEY);
+      if (raw) list = JSON.parse(raw) || [];
+    } catch (e) { list = []; }
+    // 去重：移除已存在的同 ID / dedupe: remove existing entry
+    list = list.filter(function (id) { return id !== pageId; });
+    // 加到队首 / add to front
+    list.unshift(pageId);
+    // 截断到最大长度 / trim to max length
+    if (list.length > RECENT_TOOLS_MAX) {
+      list = list.slice(0, RECENT_TOOLS_MAX);
+    }
+    try {
+      localStorage.setItem(RECENT_TOOLS_KEY, JSON.stringify(list));
+    } catch (e) { /* ignore quota errors */ }
+  }
+
+  /**
+   * renderRecentTools()
+   * 根据 localStorage 中的 recent_tools 记录渲染首页"最近使用"区域。
+   * 若无记录则隐藏该区域。每张卡片复用入口按钮的图标与点击行为。
+   * Render recent tools area from localStorage. Hides if empty.
+   * Each card reuses the entry button's icon and click behavior.
+   */
+  function renderRecentTools() {
+    const area = document.getElementById('recent-tools-area');
+    const listEl = document.getElementById('recent-tools-list');
+    if (!area || !listEl) return;
+
+    let list = [];
+    try {
+      const raw = localStorage.getItem(RECENT_TOOLS_KEY);
+      if (raw) list = JSON.parse(raw) || [];
+    } catch (e) { list = []; }
+
+    // 清空旧内容 / clear old content
+    while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+
+    if (!list || list.length === 0) {
+      // 无记录：隐藏区域 / no records: hide area
+      area.style.display = 'none';
+      return;
+    }
+
+    area.style.display = 'block';
+
+    list.forEach(function (pageId) {
+      const info = PAGE_TO_INFO[pageId];
+      if (!info) return;
+      const entryBtn = document.getElementById(info.btnId);
+      // 卡片容器 / card container
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'recent-tool-card';
+      card.setAttribute('data-recent-page', pageId);
+
+      // 图标：复用入口按钮的 SVG / icon: reuse entry button's SVG
+      const iconWrap = document.createElement('div');
+      iconWrap.className = 'recent-tool-card-icon';
+      if (entryBtn) {
+        const srcIcon = entryBtn.querySelector('.app-landing-card-icon, .landing-card-icon, .learning-card-icon');
+        if (srcIcon) {
+          const svg = srcIcon.querySelector('svg');
+          if (svg) iconWrap.appendChild(svg.cloneNode(true));
+        }
+      }
+
+      // 文字：标题 + 描述（走 i18n）/ text: title + desc (i18n)
+      const body = document.createElement('div');
+      body.className = 'recent-tool-card-body';
+      const titleEl = document.createElement('div');
+      titleEl.className = 'recent-tool-card-title';
+      titleEl.textContent = (window.i18n && typeof window.i18n.t === 'function')
+        ? window.i18n.t(info.titleKey) : info.titleKey;
+      const descEl = document.createElement('div');
+      descEl.className = 'recent-tool-card-desc';
+      descEl.textContent = (window.i18n && typeof window.i18n.t === 'function')
+        ? window.i18n.t(info.descKey) : info.descKey;
+      body.appendChild(titleEl);
+      body.appendChild(descEl);
+
+      card.appendChild(iconWrap);
+      card.appendChild(body);
+
+      // 点击：复用入口按钮行为 / click: trigger entry button behavior
+      card.addEventListener('click', function () {
+        if (entryBtn) entryBtn.click();
+      });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  /**
+   * initRecentTools()
+   * 绑定"清空"按钮事件。/ Bind clear button.
+   */
+  function initRecentTools() {
+    const clearBtn = document.getElementById('btn-recent-clear');
+    if (!clearBtn) return;
+    clearBtn.addEventListener('click', function () {
+      try { localStorage.removeItem(RECENT_TOOLS_KEY); } catch (e) { /* ignore */ }
+      renderRecentTools();
+    });
+  }
+
+  // ============================================================
+  // 首页增强：ESC 返回上一级 / ESC Back Navigation
+  // ============================================================
+
+  /**
+   * initEscBackNavigation()
+   * 全局监听 ESC 键：弹出当前页面，返回上一级页面。
+   * 在首页（栈长 ≤ 1）不响应；输入框聚焦时不响应（让浏览器默认失焦）。
+   * Global ESC listener: pop current page and go back.
+   * No-op on home (stack ≤ 1); ignored when input is focused.
+   */
+  function initEscBackNavigation() {
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+      // 首页不响应 / no-op on landing
+      if (pageHistoryStack.length <= 1) return;
+      // 输入框聚焦时不响应（让 ESC 先失焦）/ ignore if input focused
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+      }
+      // 弹出当前页面 / pop current page
+      pageHistoryStack.pop();
+      const prev = pageHistoryStack[pageHistoryStack.length - 1] || 'app-landing-page';
+      // 抑制压栈（防止 ESC 返回时再次入栈）/ suppress push during back navigation
+      _suppressHistoryPush = true;
+      try {
+        if (prev === 'app-landing-page') {
+          showAppLanding();
+        } else {
+          // 优先调用对应的 showXxx 助手，触发页面初始化逻辑
+          // Prefer calling the matching showXxx helper to trigger init logic
+          const fn = PAGE_SHOW_FNS[prev];
+          if (typeof fn === 'function') fn();
+          else showPage(prev);
+        }
+      } finally {
+        _suppressHistoryPush = false;
+      }
+    });
+  }
+
+  // 页面 ID → showXxx 助手函数映射（在所有 showXxx 定义后建立）
+  // page ID → showXxx helper map (built after all showXxx are defined)
+  var PAGE_SHOW_FNS = {
+    'app-landing-page': showAppLanding,
+    'landing-page': showLanding,
+    'predictor-page': showPredictor,
+    'calculator-page': showCalculator,
+    'function-page': showFunction,
+    'pixel-art-page': showPixelArt,
+    'pixel-drawing-page': showPixelDrawing,
+    'pixel-music-page': showPixelMusic,
+    'learning-landing-page': showLearningLanding,
+    'pixel-programming-landing-page': showPixelProgrammingLanding,
+    'arithmetic-page': showArithmetic,
+    'mixed-arithmetic-page': showMixedArithmetic,
+    'fraction-page': showFraction,
+    'decimal-page': showDecimal,
+    'equation-page': showEquation,
+    'geometry-page': showGeometry,
+    'speed-page': showSpeed,
+    'maze-page': showMaze,
+    'nn-visualizer-page': showNNVisualizer,
+    'physics-page': showPhysics,
+    'pixelizer-page': showPixelizer,
+    'clock-page': showClock,
+    'rpg-page': showRPG,
+    'settings-page': showSettings
+  };
 
   /**
    * initFunctionPlotter()
@@ -3080,6 +3529,14 @@
     const animBar = document.getElementById('param-animation-bar');
     const playBtn = document.getElementById('param-animation-play-btn');
     const speedSelect = document.getElementById('param-speed-select');
+    // 3D 相关元素 / 3D-related elements
+    const canvas3D = document.getElementById('function-3d-canvas');
+    const toggle3DBtn = document.getElementById('btn-function-toggle-3d');
+    const modeLabel = document.getElementById('function-mode-label');
+    // 当前模式：'2d' 或 '3d' / current mode: '2d' or '3d'
+    let currentMode = '2d';
+    // Function3D 是否已初始化 / whether Function3D has been inited
+    let function3DInited = false;
 
     const params = {};
     const paramConfig = {};
@@ -3111,6 +3568,85 @@
       }
       return paramConfig[name];
     }
+
+    // 获取当前激活模式下的参数名列表 / get parameter names for the active mode
+    function getActiveParamNames() {
+      if (currentMode === '3d' && window.Function3D && typeof window.Function3D.getParams === 'function') {
+        try {
+          const info = window.Function3D.getParams();
+          if (info && info.names) return info.names;
+        } catch (e) { /* ignore */ }
+        return [];
+      }
+      const fps = window.functionPlotterInstance;
+      return fps ? fps.getAllParams() : [];
+    }
+
+    // 把当前 params 同步到当前激活的渲染器 / sync params to the active renderer
+    function applyParamsToActive() {
+      if (currentMode === '3d' && window.Function3D) {
+        try { window.Function3D.setParams(params); } catch (e) { /* ignore */ }
+      } else {
+        const fps = window.functionPlotterInstance;
+        if (fps) fps.setParams(params);
+      }
+    }
+
+    // 切换 2D / 3D 模式 / switch between 2D and 3D mode
+    function switchFunctionMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+      if (mode === '3d') {
+        // 隐藏 2D 画布，显示 3D 画布 / hide 2D canvas, show 3D canvas
+        functionCanvas.style.display = 'none';
+        if (canvas3D) canvas3D.style.display = 'block';
+        if (modeLabel) modeLabel.textContent = i18n.t('function_mode_3d');
+        // 初始化 Function3D（仅一次） / init Function3D (only once)
+        if (!function3DInited && canvas3D && window.Function3D) {
+          try {
+            window.Function3D.init(canvas3D);
+            function3DInited = true;
+          } catch (e) { /* ignore */ }
+        }
+        // 把当前函数输入框的表达式传给 Function3D / pass current input expression to Function3D
+        if (window.Function3D) {
+          let expr = input && input.value ? input.value.trim() : '';
+          if (!expr) expr = 'sin(a*x)*cos(b*y)';
+          try {
+            window.Function3D.setExpression(expr);
+            // 从 Function3D 同步参数到本地 params / sync params from Function3D to local params
+            // 注意：getParams() 返回 { names: [...], values: {name: val, ...} }
+            if (typeof window.Function3D.getParams === 'function') {
+              const info = window.Function3D.getParams();
+              if (info && info.names && info.values) {
+                for (let i = 0; i < info.names.length; i++) {
+                  const nm = info.names[i];
+                  params[nm] = info.values[nm];
+                }
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
+        renderParamSliders();
+      } else {
+        // 隐藏 3D 画布，显示 2D 画布 / hide 3D canvas, show 2D canvas
+        if (canvas3D) canvas3D.style.display = 'none';
+        functionCanvas.style.display = 'block';
+        if (modeLabel) modeLabel.textContent = i18n.t('function_mode_2d');
+        // 触发 2D 画布重绘 / trigger 2D canvas resize/redraw
+        if (window.functionPlotterInstance) {
+          try {
+            window.functionPlotterInstance.resize();
+            window.functionPlotterInstance.redraw();
+          } catch (e) { /* ignore */ }
+        }
+        renderParamSliders();
+      }
+    }
+
+    if (toggle3DBtn) toggle3DBtn.addEventListener('click', function () {
+      switchFunctionMode(currentMode === '2d' ? '3d' : '2d');
+    });
 
     function createGearSvg() {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -3187,10 +3723,10 @@
       if (!animating) return;
 
       const elapsed = (currentTime - animStartTime) * animSpeed;
-      const fps = window.functionPlotterInstance;
-      if (!fps) return;
+      // 通过统一的抽象获取参数名（2D 走 FunctionPlotter，3D 走 Function3D）
+      const allParams = getActiveParamNames();
+      if (allParams.length === 0) return;
 
-      const allParams = fps.getAllParams();
       let changed = false;
 
       for (let i = 0; i < allParams.length; i++) {
@@ -3210,7 +3746,8 @@
 
       if (changed) {
         updateSliderDomValues();
-        fps.setParams(params);
+        // 同步参数到当前激活的渲染器（2D 或 3D）
+        applyParamsToActive();
       }
 
       animRafId = requestAnimationFrame(animate);
@@ -3236,8 +3773,9 @@
 
     function startAnimation() {
       if (animating) return;
-      const fps = window.functionPlotterInstance;
-      if (!fps || fps.getAllParams().length === 0) return;
+      // 通过统一抽象获取参数名（兼容 2D 和 3D 模式）
+      const allParams = getActiveParamNames();
+      if (allParams.length === 0) return;
 
       animating = true;
       animStartTime = performance.now() - animPausedTime;
@@ -3266,10 +3804,8 @@
 
     function renderParamSliders() {
       if (!paramPanel || !paramSliders) return;
-      const fps = window.functionPlotterInstance;
-      if (!fps) return;
-
-      const allParams = fps.getAllParams();
+      // 通过统一抽象获取参数名（兼容 2D 和 3D 模式）
+      const allParams = getActiveParamNames();
 
       if (allParams.length === 0) {
         paramPanel.style.display = 'none';
@@ -3337,7 +3873,8 @@
           const paramVal = parseFloat(this.value);
           params[paramName] = paramVal;
           valueEl.textContent = formatParamValue(paramVal);
-          fps.setParams(params);
+          // 同步参数到当前激活的渲染器（2D 或 3D）
+          applyParamsToActive();
         });
 
         const rangeEl = document.createElement('div');
@@ -3446,7 +3983,8 @@
           settingsBtn.classList.remove('active');
           errorEl.textContent = '';
 
-          fps.setParams(params);
+          // 同步参数到当前激活的渲染器（2D 或 3D）
+          applyParamsToActive();
         });
 
         item.appendChild(header);
@@ -3456,7 +3994,8 @@
         paramSliders.appendChild(item);
       }
 
-      fps.setParams(params);
+      // 同步参数到当前激活的渲染器（2D 或 3D）
+      applyParamsToActive();
       updatePlayButtonIcon();
     }
 
@@ -3503,12 +4042,20 @@
         showToast(i18n.t('toast_please_input_func'));
         return;
       }
+      // 在添加前先保存表达式副本（用于 3D 模式同步）
+      const exprCopy = input.value.trim();
       const result = window.functionPlotterInstance.addFunction(input.value);
       if (result.ok) {
         showToast(i18n.t('toast_func_added'));
         input.value = '';
         renderFunctionList();
         renderParamSliders();
+        // 3D 模式下：把当前函数输入框的表达式同步传给 Function3D
+        if (currentMode === '3d' && window.Function3D && typeof window.Function3D.setExpression === 'function') {
+          try {
+            window.Function3D.setExpression(exprCopy || 'sin(a*x)*cos(b*y)');
+          } catch (e) { /* ignore */ }
+        }
       } else {
         showToast(i18n.t('toast_func_error', { msg: result.error || i18n.t('func_empty_expr') }));
       }
@@ -3527,6 +4074,10 @@
     });
     if (clearBtn) clearBtn.addEventListener('click', function () {
       window.functionPlotterInstance.clearFunctions();
+      // 3D 模式下：同步重置 Function3D
+      if (currentMode === '3d' && window.Function3D && typeof window.Function3D.reset === 'function') {
+        try { window.Function3D.reset(); } catch (e) { /* ignore */ }
+      }
       renderFunctionList();
       renderParamSliders();
       showToast(i18n.t('toast_func_cleared'));
@@ -3619,6 +4170,11 @@
     initCalculator();
     initPageSwitching();
 
+    // 首页增强初始化 / home enhancements init
+    initCategoryCollapse();
+    initRecentTools();
+    initEscBackNavigation();
+
     // 函数系统初始化 / Function Plotter init
     initFunctionPlotter();
 
@@ -3633,6 +4189,11 @@
     showAppLanding();
     if (!hasProfile) {
       showRegisterModal();
+    }
+
+    // 初始化背景粒子交互系统 / init background particles
+    if (window.BackgroundParticles && typeof window.BackgroundParticles.init === 'function') {
+      window.BackgroundParticles.init(document.getElementById('bg-particles-canvas'));
     }
 
     // 语言切换事件监听 / language change event listener
@@ -3657,6 +4218,10 @@
 
       // 更新浮动头像标题
       updateFloatingAvatar();
+
+      // 重新渲染"最近使用"区域（卡片标题随语言切换）
+      // Re-render recent tools area so card titles follow language change
+      renderRecentTools();
 
       // 更新设置页语言选择器
       const langSelect = document.getElementById('settings-language');

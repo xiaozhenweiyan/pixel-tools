@@ -1788,6 +1788,162 @@ footer.pixel-panel p {
 }
 
 /* ============================================================
+   首页分类折叠 / Category Collapse
+   ============================================================ */
+.app-landing-category-title {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+.app-landing-category-title:hover {
+  opacity: 0.85;
+}
+.app-landing-category-title > span:first-child {
+  flex: 1 1 auto;
+}
+.category-toggle-icon {
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  flex: 0 0 auto;
+  display: inline-block;
+  transition: transform 0.2s;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+.app-landing-category.collapsed .category-toggle-icon {
+  transform: rotate(-90deg);
+}
+/* 折叠时隐藏分类内所有卡片与子分类 / Hide cards & subcategories when collapsed */
+.app-landing-category.collapsed > .app-landing-card,
+.app-landing-category.collapsed > .app-landing-subcategory {
+  display: none;
+}
+
+/* ============================================================
+   最近使用区域 / Recent Tools Area
+   ============================================================ */
+.recent-tools-area {
+  max-width: 720px;
+  margin: 0 auto 32px;
+  padding: 16px;
+  background: #0d0d1f;
+  border: 3px solid #ffd700;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #000000;
+  text-align: left;
+}
+.recent-tools-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ffd700;
+}
+.recent-tools-title {
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+.recent-tools-clear {
+  background: transparent;
+  border: 2px solid #ffd700;
+  border-radius: 4px;
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s;
+}
+.recent-tools-clear:hover {
+  background: #ffd700;
+  color: #1a1a2e;
+}
+.recent-tools-clear:active {
+  transform: translate(1px, 1px);
+}
+.recent-tools-list {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.recent-tool-card {
+  flex: 1 1 0;
+  min-width: 160px;
+  background: #1a1a2e;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 3px 3px 0 #000000;
+  text-align: left;
+}
+.recent-tool-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 #000000;
+  border-color: #ffd700;
+}
+.recent-tool-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 #000000;
+}
+.recent-tool-card-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffd700;
+  border-radius: 4px;
+  background: #0d0d1f;
+  overflow: hidden;
+}
+.recent-tool-card-icon svg {
+  width: 28px;
+  height: 28px;
+}
+.recent-tool-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.recent-tool-card-title {
+  color: #ffd700;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-tool-card-desc {
+  color: #ffffff;
+  font-size: 10px;
+  opacity: 0.75;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
    像素艺术生成器页面 / Pixel Art Generator Page
    ============================================================ */
 .pixel-art-page {
@@ -2067,6 +2223,46 @@ footer.pixel-panel p {
   line-height: 1.6;
 }
 .function-help p { margin: 4px 0; }
+
+/* 2D / 3D 模式切换控件 / 2D-3D Mode Toggle Controls */
+.function-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.function-toggle-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.function-mode-label {
+  font-size: 13px;
+  color: #ffd700;
+  letter-spacing: 1px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+/* 函数 3D 画布：默认隐藏，由 JS 切换显示 / Function 3D canvas: hidden by default, toggled by JS */
+#function-3d-canvas {
+  width: 100%;
+  height: 500px;
+  display: block;
+  background: #1a1a2e;
+  cursor: grab;
+  image-rendering: crisp-edges;
+  touch-action: none;
+}
+#function-3d-canvas:active { cursor: grabbing; }
+
+/* 速算挑战独立页面的排行榜样式 / Speed Challenge standalone leaderboard */
+#speed-page .mathext-leaderboard {
+  grid-column: auto;
+  grid-row: auto;
+  margin-top: 16px;
+}
 
 /* 参数调节面板 / Parameter Panel */
 .param-panel {
@@ -4570,6 +4766,75 @@ body {
     min-width: 36px;
     padding: 8px 10px;
   }
+
+  /* 最近使用区域 - 移动端单列 / Recent tools mobile single column */
+  .recent-tools-area {
+    margin: 0 auto 24px;
+    padding: 12px;
+  }
+  .recent-tools-list {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .recent-tool-card {
+    min-width: 0;
+    width: 100%;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .recent-tool-card-icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+  }
+  .recent-tool-card-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .recent-tool-card-title {
+    font-size: 12px;
+  }
+  .recent-tool-card-desc {
+    font-size: 9px;
+  }
+
+  /* 折叠图标尺寸 / Collapse icon size */
+  .category-toggle-icon {
+    font-size: 12px;
+  }
+
+  /* 新工具页面移动端画布尺寸优化 / New tool canvas sizing for mobile */
+  #function-3d-canvas,
+  .function-3d-canvas-wrap canvas {
+    height: 320px;
+  }
+  .maze-canvas-wrap canvas,
+  .physics-canvas-wrap canvas,
+  .pixelizer-original-wrap canvas,
+  .pixelizer-processed-wrap canvas,
+  .clock-canvas-wrap canvas,
+  .rpg-canvas-wrap canvas {
+    max-height: 60vh;
+  }
+  .maze-buttons .pixel-btn,
+  .physics-elements,
+  .pixelizer-controls .pixel-btn,
+  .clock-controls .pixel-btn,
+  .rpg-controls .pixel-btn {
+    font-size: 12px;
+  }
+  .physics-element-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+    min-height: 40px;
+  }
+  .maze-help,
+  .rpg-help,
+  .physics-help,
+  .pixelizer-help {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
 }
 
 /* ---------- 超小屏幕（320px）---------- */
@@ -4941,6 +5206,115 @@ canvas {
   border: 3px solid #ffffff;
   border-radius: 4px;
   touch-action: none;
+}
+
+/* 网格布局定位：控制台+编辑器在左列，网络+损失在右列 */
+.nnvis-controls { grid-column: 1; grid-row: 1; }
+.nnvis-network-panel { grid-column: 2; grid-row: 1; }
+.nnvis-loss-panel { grid-column: 2; grid-row: 2; }
+
+/* 训练集编辑器面板 / Dataset Editor Panel */
+.nnvis-dataset-panel {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.nnvis-dataset-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nnvis-subheading {
+  color: #ffd700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  font-family: 'Courier New', monospace;
+  margin: 0;
+}
+.nnvis-dataset-canvas-wrap {
+  padding: 6px;
+  max-width: 320px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+.nnvis-dataset-canvas-wrap canvas {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+.nnvis-dataset-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nnvis-sample-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nnvis-sample-list {
+  background: #1a1a2e;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nnvis-sample-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: #2d2d44;
+  border: 1px solid #3a3a55;
+  border-radius: 3px;
+}
+.nnvis-sample-idx {
+  color: #ffd700;
+  font-weight: bold;
+  min-width: 22px;
+}
+.nnvis-sample-text {
+  color: #ffffff;
+  flex: 1 1 auto;
+  word-break: break-all;
+}
+.nnvis-sample-del {
+  background: #ff4500;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 7px;
+  line-height: 1.4;
+  min-width: 22px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+.nnvis-sample-del:hover {
+  background: #ff6347;
+}
+.nnvis-sample-del:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+.nnvis-sample-empty {
+  color: #888899;
+  text-align: center;
+  padding: 12px 6px;
+  font-style: italic;
 }
 
 /* ============================================================
@@ -5497,6 +5871,14 @@ canvas {
     grid-template-columns: 1fr;
     padding: 0 12px 12px;
   }
+  /* 神经网络可视化：移动端单列，重置网格定位 */
+  .nnvis-controls,
+  .nnvis-network-panel,
+  .nnvis-loss-panel,
+  .nnvis-dataset-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
   /* 数学卡片扩展：移动端改为单列，控制台全宽在上 */
   .mathext-layout {
     grid-template-columns: 1fr;
@@ -5528,6 +5910,7 @@ canvas {
 #function-3d-canvas,
 #nnvis-network-canvas,
 #nnvis-loss-canvas,
+#nnvis-dataset-canvas,
 #mathext-canvas,
 #physics-canvas,
 #pixelizer-original-canvas,
@@ -5538,6 +5921,131 @@ canvas {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* ============================================================
+   背景粒子交互系统 / Background Particles System
+   ============================================================ */
+.bg-particles-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* z-index 设为 1：位于工具首页 .app-landing-page 实色背景之上，
+     同时低于 .app-landing-content (z-index:2)，保证粒子可见且不挡主内容 */
+  z-index: 1;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ---------- 浮动菜单容器 ---------- */
+.bg-particles-menu {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  font-family: var(--font);
+  font-weight: bold;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+/* ---------- 齿轮开关按钮 ---------- */
+.bg-particles-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  background: #1a1a2e;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  color: #ffd700;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+  user-select: none;
+}
+.bg-particles-toggle:hover {
+  background: #3d3d54;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #000000;
+}
+.bg-particles-toggle:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 #000000;
+}
+.bg-particles-toggle.active {
+  border-color: #ffd700;
+}
+.bg-particles-toggle-icon {
+  display: inline-block;
+  animation: bg-particles-gear-spin 4s linear infinite;
+}
+.bg-particles-toggle.active .bg-particles-toggle-icon {
+  animation-duration: 1.5s;
+}
+@keyframes bg-particles-gear-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-particles-toggle-icon { animation: none; }
+}
+
+/* ---------- 设置面板 ---------- */
+.bg-particles-panel {
+  display: none;
+  width: 180px;
+  padding: 12px;
+  background: #2d2d44;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #000000;
+  color: #ffffff;
+  font-size: 12px;
+}
+.bg-particles-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.bg-particles-row:last-of-type {
+  margin-bottom: 8px;
+}
+.bg-particles-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+.bg-particles-label {
+  flex: 0 0 auto;
+}
+.bg-particles-slider {
+  flex: 1 1 auto;
+  width: 90px;
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+.bg-particles-reset {
+  width: 100%;
+  font-size: 12px;
+  padding: 6px 8px;
+  margin-top: 2px;
 }
 
 

@@ -31,6 +31,8 @@
       category_art: '艺术类 ART',
       card_math_title: '像素数学',
       card_math_desc: '数字序列预测 · 计算器 · 神经网络可视化',
+      card_pixel_programming_title: '像素编程',
+      card_pixel_programming_desc: '像素迷宫 · 神经网络可视化',
       card_pixel_art_title: '像素艺术生成器',
       card_pixel_art_desc: '种子化随机生成像素艺术 · 流场 · 粒子 · 几何图案',
       card_pixel_draw_title: '像素绘图编辑器',
@@ -41,8 +43,13 @@
       category_pixel_music: 'PIXEL MUSIC 像素音乐',
       footer_github: 'GitHub 仓库：xiaozhenweiyan/pixel-tools',
 
+      // 最近使用 / Recent Tools
+      recent_tools_title: '最近使用 RECENT',
+      recent_tools_clear: '清空',
+
       back_to_tools: '← 返回工具首页',
       back_to_math: '← 返回像素数学',
+      back_to_pixel_programming: '← 返回像素编程',
       back_home: '← 返回首页',
 
       landing_title: '像素数学',
@@ -64,10 +71,36 @@
       card_arithmetic_desc: '加减乘除基础运算练习',
       card_mixed_title: '混合运算',
       card_mixed_desc: '带括号的四则混合运算练习',
+      card_fraction_title: '分数',
+      card_fraction_desc: '分数加减乘除 · 约分 · 通分动画',
+      card_decimal_title: '小数',
+      card_decimal_desc: '小数运算 · 与分数互转动画',
+      card_equation_title: '方程',
+      card_equation_desc: '一元一次/二次方程 · 天平动画求解',
+      card_geometry_title: '几何',
+      card_geometry_desc: '面积/周长/体积公式 · 互动图形',
+      card_speed_title: '速算挑战',
+      card_speed_desc: '60 秒限时答题 · 本地排行榜',
+
+      pixel_programming_title: '像素编程',
+      pixel_programming_subtitle: 'PIXEL PROGRAMMING',
+      pixel_programming_subdesc: '算法可视化 · 神经网络',
+      pixel_programming_category: '像素编程工具 PROGRAMMING TOOLS',
 
       back_to_learning: '← 返回学习系统',
       arithmetic_title: '四则运算学习',
       arithmetic_subtitle: 'ARITHMETIC LEARNING',
+
+      fraction_title: '分数学习',
+      fraction_subtitle: 'FRACTION LEARNING',
+      decimal_title: '小数学习',
+      decimal_subtitle: 'DECIMAL LEARNING',
+      equation_title: '方程学习',
+      equation_subtitle: 'EQUATION LEARNING',
+      geometry_title: '几何学习',
+      geometry_subtitle: 'GEOMETRY LEARNING',
+      speed_title: '速算挑战',
+      speed_subtitle: 'SPEED CHALLENGE',
       tab_add: '加法 ADD',
       tab_subtract: '减法 SUB',
       tab_multiply: '乘法 MUL',
@@ -198,6 +231,9 @@
       function_help_2: '支持函数：sin, cos, tan, log, sqrt, abs, exp',
       function_help_3: '支持运算：+ - * / ^（幂）',
       function_help_4: '操作：鼠标拖拽平移 · 滚轮缩放 · 右下角 +/- 按钮缩放',
+      function_toggle_3d: '切换 3D',
+      function_mode_2d: '当前模式：2D',
+      function_mode_3d: '当前模式：3D',
       toast_please_input_func: '请输入函数表达式',
       toast_func_added: '已添加函数',
       toast_func_error: '错误：{msg}',
@@ -436,6 +472,18 @@
       nnvis_reset: '重置',
       nnvis_network: '网络结构',
       nnvis_loss: '损失曲线',
+      nnvis_circle: '圆形分类',
+      nnvis_spiral: '螺旋分类',
+      nnvis_custom: '自定义',
+      nnvis_dataset_editor: '训练集编辑器',
+      nnvis_dataset_view: '训练集预览',
+      nnvis_add_sample: '添加样本',
+      nnvis_sample_input: '输入 x1,x2,输出',
+      nnvis_clear_dataset: '清空',
+      nnvis_sample_list: '样本列表',
+      nnvis_no_samples: '暂无样本',
+      nnvis_import_json: '导入 JSON',
+      nnvis_export_json: '导出 JSON',
 
       // 数学卡片扩展 / Math Cards Ext
       mathext_title: '数学卡片扩展 MATH CARDS EXT',
@@ -502,6 +550,12 @@
       rpg_help_3: 'ESC：暂停 / 退出菜单',
       rpg_canvas_title: '游戏画面',
 
+      // 背景粒子交互系统 / Background Particles
+      bg_particles_menu: '背景粒子设置',
+      bg_particles_enabled: '启用粒子',
+      bg_particles_count: '粒子数量',
+      bg_particles_reset: '重置位置',
+
       delete: '删除'
     },
 
@@ -520,6 +574,8 @@
       category_art: 'ART',
       card_math_title: 'Pixel Math',
       card_math_desc: 'Number Sequence Prediction · Calculator · Neural Network Visualization',
+      card_pixel_programming_title: 'Pixel Programming',
+      card_pixel_programming_desc: 'Pixel Maze · Neural Network Visualization',
       card_pixel_art_title: 'Pixel Art Generator',
       card_pixel_art_desc: 'Seeded Random Pixel Art · Flow Field · Particles · Geometric Patterns',
       card_pixel_draw_title: 'Pixel Draw Editor',
@@ -530,8 +586,13 @@
       category_pixel_music: 'PIXEL MUSIC',
       footer_github: 'GitHub: xiaozhenweiyan/pixel-tools',
 
+      // Recent Tools
+      recent_tools_title: 'RECENT',
+      recent_tools_clear: 'Clear',
+
       back_to_tools: '← Back to Tools',
       back_to_math: '← Back to Pixel Math',
+      back_to_pixel_programming: '← Back to Pixel Programming',
       back_home: '← Back Home',
 
       landing_title: 'PIXEL MATH',
@@ -553,10 +614,36 @@
       card_arithmetic_desc: 'Basic addition, subtraction, multiplication, division practice',
       card_mixed_title: 'Mixed Operations',
       card_mixed_desc: 'Mixed arithmetic practice with parentheses',
+      card_fraction_title: 'Fractions',
+      card_fraction_desc: 'Fraction arithmetic · Reduction · Common denominator',
+      card_decimal_title: 'Decimals',
+      card_decimal_desc: 'Decimal operations · Convert to/from fractions',
+      card_equation_title: 'Equations',
+      card_equation_desc: 'Linear / Quadratic equations · Balance scale',
+      card_geometry_title: 'Geometry',
+      card_geometry_desc: 'Area / Perimeter / Volume formulas · Interactive',
+      card_speed_title: 'Speed Challenge',
+      card_speed_desc: '60-second timed quiz · Local leaderboard',
+
+      pixel_programming_title: 'Pixel Programming',
+      pixel_programming_subtitle: 'PIXEL PROGRAMMING',
+      pixel_programming_subdesc: 'Algorithm Visualization · Neural Network',
+      pixel_programming_category: 'PROGRAMMING TOOLS',
 
       back_to_learning: '← Back to Learning',
       arithmetic_title: 'Arithmetic Learning',
       arithmetic_subtitle: 'ARITHMETIC LEARNING',
+
+      fraction_title: 'Fraction Learning',
+      fraction_subtitle: 'FRACTION LEARNING',
+      decimal_title: 'Decimal Learning',
+      decimal_subtitle: 'DECIMAL LEARNING',
+      equation_title: 'Equation Learning',
+      equation_subtitle: 'EQUATION LEARNING',
+      geometry_title: 'Geometry Learning',
+      geometry_subtitle: 'GEOMETRY LEARNING',
+      speed_title: 'Speed Challenge',
+      speed_subtitle: 'SPEED CHALLENGE',
       tab_add: 'ADD',
       tab_subtract: 'SUB',
       tab_multiply: 'MUL',
@@ -687,6 +774,9 @@
       function_help_2: 'Supported functions: sin, cos, tan, log, sqrt, abs, exp',
       function_help_3: 'Supported operations: + - * / ^ (power)',
       function_help_4: 'Controls: Drag to pan · Scroll to zoom · +/- buttons in bottom-right to zoom',
+      function_toggle_3d: 'Toggle 3D',
+      function_mode_2d: 'Current Mode: 2D',
+      function_mode_3d: 'Current Mode: 3D',
       toast_please_input_func: 'Please enter a function expression',
       toast_func_added: 'Function added',
       toast_func_error: 'Error: {msg}',
@@ -925,6 +1015,18 @@
       nnvis_reset: 'Reset',
       nnvis_network: 'Network Structure',
       nnvis_loss: 'Loss Curve',
+      nnvis_circle: 'Circle',
+      nnvis_spiral: 'Spiral',
+      nnvis_custom: 'Custom',
+      nnvis_dataset_editor: 'Dataset Editor',
+      nnvis_dataset_view: 'Dataset Preview',
+      nnvis_add_sample: 'Add Sample',
+      nnvis_sample_input: 'Input x1,x2,output',
+      nnvis_clear_dataset: 'Clear',
+      nnvis_sample_list: 'Sample List',
+      nnvis_no_samples: 'No samples',
+      nnvis_import_json: 'Import JSON',
+      nnvis_export_json: 'Export JSON',
 
       // Math Cards Ext
       mathext_title: 'MATH CARDS EXT',
@@ -990,6 +1092,12 @@
       rpg_help_2: 'Space / Enter: Interact / Confirm',
       rpg_help_3: 'ESC: Pause / Exit menu',
       rpg_canvas_title: 'Game Screen',
+
+      // Background Particles
+      bg_particles_menu: 'Background Particles Settings',
+      bg_particles_enabled: 'Enable Particles',
+      bg_particles_count: 'Particle Count',
+      bg_particles_reset: 'Reset Positions',
 
       delete: 'Delete'
     }

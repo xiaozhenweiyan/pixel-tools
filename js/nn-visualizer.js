@@ -65,6 +65,11 @@ window.NNVisualizer = (function () {
   // 缓存最近一次前向传播的激活值（用于绘制神经元激活状态）
   var lastActivations = null;
 
+  // 自定义训练集状态 / Custom Dataset State
+  var customDataset = [];            // 自定义样本（持久存储）
+  var currentDataset = [];           // 当前活跃训练集（显示/训练/编辑）
+  var currentDatasetType = 'custom'; // 当前训练集类型：xor/sine/circle/spiral/custom
+
   // ============================================================
   // 激活函数 / Activation Functions
   // ============================================================
@@ -527,6 +532,244 @@ window.NNVisualizer = (function () {
     return data;
   }
 
+  // 生成圆形分类数据集：[x1, x2, label]
+  // 在 [-1,1]×[-1,1] 平面随机生成点，距离原点 < 0.5 为类 1，否则为类 0
+  // 坐标归一化到 [0,1]，约 n 个点
+  function generateCircleData(n) {
+    n = n || 40;
+    var data = [];
+    for (var i = 0; i < n; i++) {
+      var x = Math.random() * 2 - 1;   // [-1, 1]
+      var y = Math.random() * 2 - 1;
+      var dist = Math.sqrt(x * x + y * y);
+      var label = dist < 0.5 ? 1 : 0;
+      // 归一化到 [0, 1]
+      data.push([(x + 1) / 2, (y + 1) / 2, label]);
+    }
+    return data;
+  }
+
+  // 生成螺旋分类数据集：[x1, x2, label]
+  // 两条螺旋线，每条 n 个点，分别属于类 0 和类 1
+  // 坐标归一化到 [0,1]
+  function generateSpiralData(n) {
+    n = n || 20;  // 每条螺旋的点数
+    var data = [];
+    for (var cls = 0; cls < 2; cls++) {
+      for (var i = 0; i < n; i++) {
+        var t = i / (n - 1);                  // [0, 1]
+        var r = t * 0.45 + 0.05;              // 半径
+        var theta = t * 4 * Math.PI + cls * Math.PI; // 角度，两螺旋相差 π
+        var x = r * Math.cos(theta);
+        var y = r * Math.sin(theta);
+        // 归一化到 [0, 1]
+        data.push([x + 0.5, y + 0.5, cls]);
+      }
+    }
+    return data;
+  }
+
+  // ============================================================
+  // 训练集管理 / Dataset Management
+  // ============================================================
+
+  // 选择内置或自定义训练集（不覆盖持久化的 customDataset）
+  function selectDataset(type) {
+    currentDatasetType = type;
+    if (type === 'custom') {
+      currentDataset = customDataset;
+    } else if (type === 'xor') {
+      currentDataset = XOR_DATASET.map(function (s) { return s.slice(); });
+    } else if (type === 'sine') {
+      currentDataset = generateSineData();
+    } else if (type === 'circle') {
+      currentDataset = generateCircleData();
+    } else if (type === 'spiral') {
+      currentDataset = generateSpiralData();
+    } else {
+      currentDataset = customDataset;
+    }
+    return currentDataset;
+  }
+
+  // 设置自定义训练集（切换到自定义模式，覆盖 customDataset）
+  function setDataset(samples) {
+    if (!Array.isArray(samples)) {
+      throw new Error('samples 必须是数组');
+    }
+    customDataset = samples.map(function (s) {
+      return Array.isArray(s) ? s.slice() : s;
+    });
+    currentDataset = customDataset;
+    currentDatasetType = 'custom';
+  }
+
+  // 获取当前训练集
+  function getDataset() {
+    return currentDataset;
+  }
+
+  // 添加单个样本到当前训练集
+  // 自定义模式下，customDataset 与 currentDataset 同引用，已同步
+  function addSample(sample) {
+    if (!Array.isArray(sample)) {
+      throw new Error('sample 必须是数组');
+    }
+    currentDataset.push(sample.slice());
+  }
+
+  // 删除指定索引的样本
+  function removeSample(index) {
+    if (index < 0 || index >= currentDataset.length) return;
+    currentDataset.splice(index, 1);
+  }
+
+  // 清空当前训练集（原地清空以保持引用）
+  function clearDataset() {
+    currentDataset.length = 0;
+  }
+
+  // ============================================================
+  // 训练集散点图可视化 / Dataset Scatter Plot
+  // 在 canvas 上绘制训练集散点图
+  // 分类：类0=金色#ffd700，类1=红色#ff4500
+  // ============================================================
+  function drawDataset(ctx, canvas) {
+    if (!ctx || !canvas) return;
+    var w = canvas.width;
+    var h = canvas.height;
+
+    // 背景
+    ctx.fillStyle = COLOR_BG;
+    ctx.fillRect(0, 0, w, h);
+
+    var padL = 30, padR = 12, padT = 24, padB = 22;
+    var plotW = w - padL - padR;
+    var plotH = h - padT - padB;
+
+    // 网格线
+    ctx.strokeStyle = COLOR_GRID;
+    ctx.lineWidth = 0.5;
+    var nGrid = 5;
+    for (var gx = 0; gx <= nGrid; gx++) {
+      var gxp = padL + plotW * (gx / nGrid);
+      ctx.beginPath();
+      ctx.moveTo(gxp, padT);
+      ctx.lineTo(gxp, padT + plotH);
+      ctx.stroke();
+    }
+    for (var gy = 0; gy <= nGrid; gy++) {
+      var gyp = padT + plotH * (gy / nGrid);
+      ctx.beginPath();
+      ctx.moveTo(padL, gyp);
+      ctx.lineTo(padL + plotW, gyp);
+      ctx.stroke();
+    }
+
+    // 边框（坐标轴）
+    ctx.strokeStyle = COLOR_AXIS;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padL, padT, plotW, plotH);
+
+    // 坐标轴刻度标签
+    ctx.fillStyle = COLOR_TEXT;
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (var lx = 0; lx <= nGrid; lx++) {
+      ctx.fillText((lx / nGrid).toFixed(1), padL + plotW * (lx / nGrid), padT + plotH + 3);
+    }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var ly = 0; ly <= nGrid; ly++) {
+      ctx.fillText((1 - ly / nGrid).toFixed(1), padL - 3, padT + plotH * (ly / nGrid));
+    }
+
+    // 顶部标题（样本数）
+    ctx.fillStyle = COLOR_NEURON_BORDER;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Samples: ' + currentDataset.length, padL, 6);
+
+    // 空数据提示
+    if (currentDataset.length === 0) {
+      var emptyText = 'No samples';
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        try { emptyText = window.i18n.t('nnvis_no_samples'); } catch (e) { /* ignore */ }
+      }
+      ctx.fillStyle = COLOR_TEXT;
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emptyText, padL + plotW / 2, padT + plotH / 2);
+      return;
+    }
+
+    // 检测是否为分类数据（最后一个元素为 0 或 1）
+    var isClassification = false;
+    var first = currentDataset[0];
+    if (first && first.length >= 3) {
+      var lbl0 = first[first.length - 1];
+      isClassification = (lbl0 === 0 || lbl0 === 1);
+    }
+
+    // 绘制散点
+    for (var s = 0; s < currentDataset.length; s++) {
+      var sample = currentDataset[s];
+      if (!sample || sample.length < 2) continue;
+      var sx = sample[0];
+      var sy = sample[1];
+      // 夹紧到 [0,1]
+      if (sx < 0) sx = 0; else if (sx > 1) sx = 1;
+      if (sy < 0) sy = 0; else if (sy > 1) sy = 1;
+      var px = padL + plotW * sx;
+      var py = padT + plotH * (1 - sy);
+
+      var label = sample[sample.length - 1];
+      var color;
+      if (isClassification) {
+        // 类0=金色，类1=红色
+        color = (label >= 0.5) ? COLOR_WEIGHT_POS : COLOR_NEURON_BORDER;
+      } else {
+        // 回归数据统一用金色
+        color = COLOR_NEURON_BORDER;
+      }
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // 白色描边增强可见性
+      ctx.strokeStyle = COLOR_TEXT;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // 图例（仅分类数据）
+    if (isClassification) {
+      var legX = w - padR - 50;
+      var legY = 9;
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      // 类0 - 金色
+      ctx.fillStyle = COLOR_NEURON_BORDER;
+      ctx.beginPath();
+      ctx.arc(legX, legY, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLOR_TEXT;
+      ctx.fillText('0', legX + 5, legY);
+      // 类1 - 红色
+      ctx.fillStyle = COLOR_WEIGHT_POS;
+      ctx.beginPath();
+      ctx.arc(legX + 20, legY, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLOR_TEXT;
+      ctx.fillText('1', legX + 25, legY);
+    }
+  }
+
   // ============================================================
   // 训练循环 / Training Loop
   // 使用 requestAnimationFrame 驱动，每帧训练 trainSpeed 步
@@ -697,10 +940,20 @@ window.NNVisualizer = (function () {
     reset: reset,
     stop: stop,
     setSpeed: setSpeed,
+    // 训练集管理 / Dataset Management
+    setDataset: setDataset,
+    getDataset: getDataset,
+    addSample: addSample,
+    removeSample: removeSample,
+    clearDataset: clearDataset,
+    selectDataset: selectDataset,
+    drawDataset: drawDataset,
     datasets: {
       xor: XOR_DATASET,
       sine: generateSineData,
-      generateSine: generateSineData
+      generateSine: generateSineData,
+      circle: generateCircleData,
+      spiral: generateSpiralData
     }
   };
 })();
