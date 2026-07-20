@@ -598,13 +598,13 @@
       });
     }
 
-    zoomByButton(delta) {
-      // 以 canvas 中心为缩放中心
+    zoomByButton(factor) {
+      // 以 canvas 中心为缩放中心，factor > 1 放大, factor < 1 缩小
       const cx = this.width / 2;
       const cy = this.height / 2;
       const mathX = this.toMathX(cx);
       const mathY = this.toMathY(cy);
-      this.scale = Math.max(1e-9, Math.min(1e9, this.scale + delta));
+      this.scale = Math.max(1e-9, Math.min(1e9, this.scale * factor));
       this.originX = cx - mathX * this.scale;
       this.originY = cy + mathY * this.scale;
       this.redraw();

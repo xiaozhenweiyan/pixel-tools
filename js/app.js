@@ -4193,10 +4193,10 @@
       showToast(i18n.t('toast_func_cleared'));
     });
     if (zoomIn) zoomIn.addEventListener('click', function () {
-      window.functionPlotterInstance.zoomByButton(10);
+      window.functionPlotterInstance.zoomByButton(1.2);
     });
     if (zoomOut) zoomOut.addEventListener('click', function () {
-      window.functionPlotterInstance.zoomByButton(-10);
+      window.functionPlotterInstance.zoomByButton(1 / 1.2);
     });
     // 初始绘制
     window.functionPlotterInstance.redraw();
