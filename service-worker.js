@@ -10,7 +10,7 @@
  * 每次部署后必须升级 CACHE_NAME 版本号，确保旧缓存被清除。
  */
 
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const CACHE_NAME = 'pixel-tools-' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -19,6 +19,7 @@ const PRECACHE_URLS = [
   './styles/pixel.css',
   './js/app.js',
   './js/i18n.js',
+  './js/mouse-trails.js',
   './js/pixel-art.js',
   './js/pixel-music.js',
   './js/pixel-drawing-editor.js',

@@ -4226,6 +4226,7 @@
     });
 
     initMobileOptimizations();
+    initTutorialSystem();
   }
 
   // ============================================================
@@ -4298,6 +4299,59 @@
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  // ============================================================
+  // 教程系统 / Tutorial System
+  // ============================================================
+  function initTutorialSystem() {
+    const tutorialModal = document.getElementById('tutorial-modal');
+    const tutorialContent = document.getElementById('tutorial-content');
+    const tutorialClose = document.getElementById('tutorial-close');
+    const tutorialTitle = document.getElementById('tutorial-title');
+
+    if (!tutorialModal || !tutorialContent || !tutorialClose) return;
+
+    function closeTutorial() {
+      tutorialModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function openTutorial(pageId) {
+      const tutorialKey = 'tutorial_' + pageId.replace('-page', '');
+      let content = i18n.t(tutorialKey);
+      if (!content || content === tutorialKey) {
+        content = i18n.t('tutorial_fallback');
+      }
+      tutorialContent.innerHTML = content;
+      tutorialModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    tutorialClose.addEventListener('click', closeTutorial);
+
+    tutorialModal.addEventListener('click', function (e) {
+      if (e.target === tutorialModal) {
+        closeTutorial();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && tutorialModal.style.display === 'flex') {
+        closeTutorial();
+      }
+    });
+
+    const tutorialButtons = document.querySelectorAll('.tutorial-btn');
+    for (let i = 0; i < tutorialButtons.length; i++) {
+      const btn = tutorialButtons[i];
+      btn.addEventListener('click', function () {
+        const pageId = btn.dataset.page;
+        if (pageId) {
+          openTutorial(pageId);
+        }
+      });
+    }
   }
 
   // ============================================================

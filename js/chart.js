@@ -435,6 +435,73 @@ function drawLineChartTicks(ctx, L) {
   for (var xi = Math.ceil(L.xMin); xi <= Math.floor(L.xMax); xi += xStep) {
     ctx.fillText(String(xi), L.xToPx(xi), L.plotB + 8);
   }
+
+  drawLineChartUnitLength(ctx, L);
+}
+
+function drawLineChartUnitLength(ctx, L) {
+  const targetPixels = 50;
+  const xRange = L.xMax - L.xMin;
+  const yRange = L.yMax - L.yMin;
+  const xPixels = L.plotR - L.plotL;
+  const yPixels = L.plotB - L.plotT;
+
+  const xScale = xPixels / xRange;
+  const yScale = yPixels / yRange;
+
+  const xRawUnits = targetPixels / xScale;
+  const yRawUnits = targetPixels / yScale;
+
+  const magnitudes = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+
+  function findBestUnit(raw) {
+    let best = magnitudes[0];
+    let minDiff = Math.abs(raw - best);
+    for (let i = 1; i < magnitudes.length; i++) {
+      const diff = Math.abs(raw - magnitudes[i]);
+      if (diff < minDiff) {
+        minDiff = diff;
+        best = magnitudes[i];
+      }
+    }
+    return best;
+  }
+
+  const xUnit = findBestUnit(xRawUnits);
+  const yUnit = findBestUnit(yRawUnits);
+
+  ctx.fillStyle = CHART_GOLD;
+  ctx.font = 'bold 10px "Courier New", monospace';
+
+  const xPxLen = xUnit * xScale;
+  const xLabel = xUnit === 1 ? '1' : xUnit.toFixed(2);
+  if (L.plotL + xPxLen + 40 < L.plotR) {
+    ctx.beginPath();
+    ctx.moveTo(L.plotL + 12, L.plotB - 6);
+    ctx.lineTo(L.plotL + 12 + xPxLen, L.plotB - 6);
+    ctx.lineTo(L.plotL + 12 + xPxLen, L.plotB);
+    ctx.lineTo(L.plotL + 12, L.plotB);
+    ctx.closePath();
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(xLabel, L.plotL + 12 + xPxLen / 2, L.plotB - 8);
+  }
+
+  const yPxLen = yUnit * yScale;
+  const yLabel = yUnit === 1 ? '1' : yUnit.toFixed(2);
+  if (L.plotT + yPxLen + 30 < L.plotB) {
+    ctx.beginPath();
+    ctx.moveTo(L.plotL, L.plotB - 12);
+    ctx.lineTo(L.plotL, L.plotB - 12 - yPxLen);
+    ctx.lineTo(L.plotL + 6, L.plotB - 12 - yPxLen);
+    ctx.lineTo(L.plotL + 6, L.plotB - 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(yLabel, L.plotL + 10, L.plotB - 12 - yPxLen / 2);
+  }
 }
 
 /** 拟合曲线（虚线，水蓝色）/ fitted curve (dashed, teal color)。 */

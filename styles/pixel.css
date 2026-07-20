@@ -1436,6 +1436,111 @@ footer.pixel-panel p {
 }
 
 /* ============================================================
+   教程模态框 / Tutorial Modal
+   ============================================================ */
+.tutorial-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.tutorial-modal-content {
+  max-width: 720px;
+  width: 100%;
+  max-height: 80vh;
+  padding: 24px;
+  position: relative;
+}
+.tutorial-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+}
+.tutorial-modal-header h2 {
+  color: #ffd700;
+  margin: 0;
+  font-size: 20px;
+}
+.tutorial-close-btn {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  background: #2d2d44;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.05s;
+}
+.tutorial-close-btn:hover {
+  background: #3d3d54;
+}
+.tutorial-close-btn:active {
+  transform: translate(2px, 2px);
+}
+.tutorial-content {
+  max-height: calc(80vh - 120px);
+  overflow-y: auto;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.tutorial-content h3 {
+  color: #ffd700;
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+}
+.tutorial-content p {
+  margin: 8px 0;
+}
+.tutorial-content ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.tutorial-content li {
+  margin: 6px 0;
+}
+
+/* 教程按钮 / Tutorial Button */
+.tutorial-btn {
+  display: block;
+  width: calc(100% - 40px);
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 12px;
+  text-align: center;
+  background: #2d2d44;
+  border: 3px solid #ffffff;
+  border-radius: 4px;
+  color: #ffffff;
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.05s;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+}
+.tutorial-btn:hover {
+  background: #3d3d54;
+}
+.tutorial-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+
+/* ============================================================
    设置页面 / Settings Page
    ============================================================ */
 .settings-page {
@@ -3369,21 +3474,27 @@ footer.pixel-panel p {
   padding: 12px 28px;
   background: #ffd700;
   color: #1a1a2e;
-  border-color: #ffd700;
+  border-color: #1a1a2e;
   letter-spacing: 2px;
   margin-bottom: 4px;
+  font-weight: bold;
+  text-shadow: none;
 }
 
 .arithmetic-demo-btn:hover {
   background: #ffed4a;
+  color: #1a1a2e;
 }
 
 .arithmetic-demo-btn.disabled,
 .arithmetic-demo-btn:disabled {
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
   transform: none;
   box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  background: #ccc;
+  color: #666;
+  border-color: #666;
 }
 
 /* 说明文字 / Hint */

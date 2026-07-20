@@ -201,6 +201,60 @@
       if (yAxisX >= 0 && yAxisX <= w) {
         ctx.fillText('y', yAxisX + 8, 12);
       }
+
+      // 单位长度标识
+      this.drawUnitLength(ctx, w, h, yAxisX, xAxisY);
+    }
+
+    drawUnitLength(ctx, w, h, yAxisX, xAxisY) {
+      const unitLen = this.getUnitLength();
+      const pxLen = this.scale * unitLen;
+      const label = unitLen === 1 ? '1' : unitLen.toFixed(2);
+
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 10px "Courier New", monospace';
+
+      if (xAxisY >= 0 && xAxisY <= h && yAxisX + pxLen + 40 < w) {
+        ctx.beginPath();
+        ctx.moveTo(yAxisX + 8, xAxisY - 6);
+        ctx.lineTo(yAxisX + 8 + pxLen, xAxisY - 6);
+        ctx.lineTo(yAxisX + 8 + pxLen, xAxisY);
+        ctx.lineTo(yAxisX + 8, xAxisY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, yAxisX + 8 + pxLen / 2, xAxisY - 8);
+      }
+
+      if (yAxisX >= 0 && yAxisX <= w && xAxisY - pxLen - 30 > 0) {
+        ctx.beginPath();
+        ctx.moveTo(yAxisX, xAxisY - 8);
+        ctx.lineTo(yAxisX, xAxisY - 8 - pxLen);
+        ctx.lineTo(yAxisX - 6, xAxisY - 8 - pxLen);
+        ctx.lineTo(yAxisX - 6, xAxisY - 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, yAxisX + 8, xAxisY - 8 - pxLen / 2);
+      }
+    }
+
+    getUnitLength() {
+      const targetPixels = 60;
+      const rawUnits = targetPixels / this.scale;
+      const magnitudes = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];
+      let best = magnitudes[0];
+      let minDiff = Math.abs(rawUnits - best);
+      for (let i = 1; i < magnitudes.length; i++) {
+        const diff = Math.abs(rawUnits - magnitudes[i]);
+        if (diff < minDiff) {
+          minDiff = diff;
+          best = magnitudes[i];
+        }
+      }
+      return best;
     }
 
     plotFunction(fn, color) {

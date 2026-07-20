@@ -550,7 +550,22 @@
       rpg_help_3: 'ESC：暂停 / 退出菜单',
       rpg_canvas_title: '游戏画面',
 
-      delete: '删除'
+      delete: '删除',
+
+      tutorial_title: '教程',
+      tutorial_btn: '教程',
+
+      tutorial_predictor: '<h3>预测系统使用教程</h3><p>预测系统可以根据输入的数字序列，使用多种数学方法和神经网络进行预测。</p><ul><li><strong>输入数据：</strong>在输入框中输入数字，用空格或逗号分隔</li><li><strong>点击预测：</strong>点击「开始预测」按钮获取预测结果</li><li><strong>查看方法：</strong>点击「查看所有方法」查看40种方法的详细结果</li><li><strong>坐标系：</strong>图表支持鼠标拖拽平移，滚轮缩放，右下角 +/- 按钮缩放</li><li><strong>重置：</strong>点击「重置」清空所有数据</li></ul>',
+      tutorial_function: '<h3>函数系统使用教程</h3><p>函数系统可以绘制数学函数图像，支持2D和3D模式。</p><ul><li><strong>输入函数：</strong>在输入框中输入函数表达式，如 y=x^2 或 f(x)=sin(x)</li><li><strong>添加函数：</strong>点击「添加」按钮或按回车键添加函数</li><li><strong>切换模式：</strong>点击「切换 3D」在2D和3D模式间切换</li><li><strong>坐标系操作：</strong>鼠标拖拽平移，滚轮缩放，右下角 +/- 按钮缩放</li><li><strong>参数支持：</strong>可以使用参数 a, b, c, d 等，如 y=a*x+b</li><li><strong>清除全部：</strong>点击「清除全部」删除所有函数</li></ul>',
+      tutorial_calculator: '<h3>计算器系统使用教程</h3><p>像素风格计算器，支持四则运算和数学函数。</p><ul><li><strong>输入表达式：</strong>点击按钮或使用键盘输入数学表达式</li><li><strong>支持运算：</strong>加(+)、减(-)、乘(*)、除(/)、幂(^)</li><li><strong>支持函数：</strong>sin、cos、tan、log、sqrt、abs、exp</li><li><strong>角度模式：</strong>点击「DEG/RAD」切换角度/弧度模式</li><li><strong>查看步骤：</strong>点击「步骤」查看运算过程</li></ul>',
+      tutorial_learning: '<h3>学习系统使用教程</h3><p>交互式数学学习卡片，通过动画和练习帮助理解数学概念。</p><ul><li><strong>选择卡片：</strong>点击不同的学习卡片进入对应的学习模块</li><li><strong>观看动画：</strong>通过动画演示理解数学概念</li><li><strong>完成练习：</strong>按照提示完成练习巩固知识</li><li><strong>返回：</strong>点击左上角按钮返回上一级</li></ul>',
+      tutorial_pixel_art: '<h3>像素艺术生成器教程</h3><p>种子化随机生成像素艺术作品。</p><ul><li><strong>设置种子：</strong>输入数字种子或点击「随机种子」</li><li><strong>选择模式：</strong>选择不同的艺术模式（流场、粒子、几何等）</li><li><strong>调整参数：</strong>调整分辨率、密度、颜色等参数</li><li><strong>生成：</strong>点击「生成」按钮创建艺术作品</li><li><strong>下载：</strong>点击「下载」保存为PNG图片</li></ul>',
+      tutorial_pixel_draw: '<h3>像素绘图编辑器教程</h3><p>逐像素手绘创作像素画。</p><ul><li><strong>选择颜色：</strong>从调色板中选择颜色</li><li><strong>绘制：</strong>点击或拖拽在画布上绘制像素</li><li><strong>橡皮擦：</strong>点击橡皮擦工具清除像素</li><li><strong>填充：</strong>使用填充工具填充区域</li><li><strong>图层：</strong>支持多图层操作</li><li><strong>导出：</strong>点击「导出 PNG」保存作品</li></ul>',
+      tutorial_pixel_music: '<h3>像素音乐合成器教程</h3><p>创作8-bit芯片音乐。</p><ul><li><strong>选择轨道：</strong>点击不同的音轨</li><li><strong>编辑音符：</strong>点击网格添加/删除音符</li><li><strong>调整参数：</strong>设置速度、音高、音色等</li><li><strong>播放：</strong>点击播放按钮试听</li><li><strong>导出：</strong>点击「导出 WAV」保存音乐</li></ul>',
+      tutorial_maze: '<h3>迷宫生成器教程</h3><p>使用多种算法生成迷宫。</p><ul><li><strong>选择算法：</strong>选择递归回溯、Prim、Kruskal等算法</li><li><strong>调整大小：</strong>设置迷宫尺寸和墙壁厚度</li><li><strong>生成：</strong>点击「生成」创建迷宫</li><li><strong>求解：</strong>点击「求解」显示路径动画</li><li><strong>导出：</strong>点击「导出」保存为像素图</li></ul>',
+      tutorial_nn: '<h3>神经网络可视化教程</h3><p>可视化神经网络训练过程。</p><ul><li><strong>设置结构：</strong>调整网络层数和每层神经元数</li><li><strong>选择数据集：</strong>选择XOR、正弦拟合等数据集</li><li><strong>训练：</strong>点击「训练」按钮开始训练</li><li><strong>观察：</strong>实时查看权重变化和损失曲线</li></ul>',
+      tutorial_rpg: '<h3>像素RPG游戏教程</h3><p>简单的像素风RPG小游戏。</p><ul><li><strong>移动：</strong>使用方向键或WASD控制角色移动</li><li><strong>战斗：</strong>遇到敌人自动进入战斗</li><li><strong>升级：</strong>击败敌人获得经验升级</li><li><strong>暂停：</strong>按ESC暂停游戏</li></ul>',
+      tutorial_fallback: '<h3>使用教程</h3><p>欢迎使用本工具！</p><p>本工具提供像素风格的交互体验，您可以：</p><ul><li>点击页面上的按钮和控件进行操作</li><li>使用鼠标拖拽进行平移</li><li>使用滚轮进行缩放</li><li>点击左上角按钮返回上一级</li></ul>'
     },
 
     en: {
@@ -1087,7 +1102,22 @@
       rpg_help_3: 'ESC: Pause / Exit menu',
       rpg_canvas_title: 'Game Screen',
 
-      delete: 'Delete'
+      delete: 'Delete',
+
+      tutorial_title: 'Tutorial',
+      tutorial_btn: 'Tutorial',
+
+      tutorial_predictor: '<h3>Prediction System Tutorial</h3><p>The prediction system can predict based on input number sequences using multiple math methods and neural networks.</p><ul><li><strong>Input Data:</strong> Enter numbers separated by spaces or commas</li><li><strong>Start Prediction:</strong> Click "Start Prediction" to get results</li><li><strong>View Methods:</strong> Click "View All Methods" for detailed results</li><li><strong>Chart Controls:</strong> Drag to pan, scroll to zoom, +/- buttons in bottom-right</li><li><strong>Reset:</strong> Click "Reset" to clear all data</li></ul>',
+      tutorial_function: '<h3>Function System Tutorial</h3><p>The function system can plot mathematical functions in 2D and 3D modes.</p><ul><li><strong>Input Function:</strong> Enter function expressions like y=x^2 or f(x)=sin(x)</li><li><strong>Add Function:</strong> Click "Add" or press Enter</li><li><strong>Toggle Mode:</strong> Click "Toggle 3D" to switch between modes</li><li><strong>Chart Controls:</strong> Drag to pan, scroll to zoom, +/- buttons in bottom-right</li><li><strong>Parameters:</strong> Use parameters a, b, c, d like y=a*x+b</li><li><strong>Clear All:</strong> Click "Clear All" to remove all functions</li></ul>',
+      tutorial_calculator: '<h3>Calculator Tutorial</h3><p>Pixel-style calculator supporting arithmetic and math functions.</p><ul><li><strong>Input Expression:</strong> Click buttons or use keyboard</li><li><strong>Operations:</strong> +, -, *, /, ^ (power)</li><li><strong>Functions:</strong> sin, cos, tan, log, sqrt, abs, exp</li><li><strong>Angle Mode:</strong> Click "DEG/RAD" to toggle</li><li><strong>Steps:</strong> Click "Steps" to view calculation process</li></ul>',
+      tutorial_learning: '<h3>Learning System Tutorial</h3><p>Interactive math learning cards with animations and exercises.</p><ul><li><strong>Select Card:</strong> Click different learning cards</li><li><strong>Watch Animation:</strong> Understand concepts through animations</li><li><strong>Complete Exercises:</strong> Practice to reinforce knowledge</li><li><strong>Back:</strong> Click top-left button to go back</li></ul>',
+      tutorial_pixel_art: '<h3>Pixel Art Generator Tutorial</h3><p>Seeded random pixel art generation.</p><ul><li><strong>Set Seed:</strong> Enter seed number or click "Random Seed"</li><li><strong>Select Mode:</strong> Choose flow field, particles, geometric, etc.</li><li><strong>Adjust Parameters:</strong> Resolution, density, colors</li><li><strong>Generate:</strong> Click "Generate" to create art</li><li><strong>Download:</strong> Click "Download" to save as PNG</li></ul>',
+      tutorial_pixel_draw: '<h3>Pixel Drawing Editor Tutorial</h3><p>Draw pixel art pixel by pixel.</p><ul><li><strong>Select Color:</strong> Choose from palette</li><li><strong>Draw:</strong> Click or drag on canvas</li><li><strong>Eraser:</strong> Use eraser tool to clear</li><li><strong>Fill:</strong> Fill areas with fill tool</li><li><strong>Layers:</strong> Multi-layer support</li><li><strong>Export:</strong> Click "Export PNG"</li></ul>',
+      tutorial_pixel_music: '<h3>Pixel Music Synthesizer Tutorial</h3><p>Create 8-bit chiptune music.</p><ul><li><strong>Select Track:</strong> Click different tracks</li><li><strong>Edit Notes:</strong> Click grid to add/remove notes</li><li><strong>Adjust Parameters:</strong> Speed, pitch, tone</li><li><strong>Play:</strong> Click play button to listen</li><li><strong>Export:</strong> Click "Export WAV"</li></ul>',
+      tutorial_maze: '<h3>Maze Generator Tutorial</h3><p>Generate mazes with multiple algorithms.</p><ul><li><strong>Select Algorithm:</strong> Recursive Backtracker, Prim, Kruskal, etc.</li><li><strong>Adjust Size:</strong> Set maze dimensions and wall thickness</li><li><strong>Generate:</strong> Click "Generate"</li><li><strong>Solve:</strong> Click "Solve" for path animation</li><li><strong>Export:</strong> Click "Export"</li></ul>',
+      tutorial_nn: '<h3>Neural Network Visualization Tutorial</h3><p>Visualize neural network training.</p><ul><li><strong>Set Structure:</strong> Adjust layers and neurons per layer</li><li><strong>Select Dataset:</strong> XOR, sine fitting, etc.</li><li><strong>Train:</strong> Click "Train" button</li><li><strong>Observe:</strong> Real-time weight changes and loss curve</li></ul>',
+      tutorial_rpg: '<h3>Pixel RPG Game Tutorial</h3><p>Simple pixel-style RPG game.</p><ul><li><strong>Move:</strong> Arrow keys or WASD</li><li><strong>Battle:</strong> Auto-enter battle when encountering enemies</li><li><strong>Level Up:</strong> Gain experience from defeated enemies</li><li><strong>Pause:</strong> Press ESC</li></ul>',
+      tutorial_fallback: '<h3>Usage Tutorial</h3><p>Welcome to this tool!</p><p>This tool provides pixel-style interactive experience:</p><ul><li>Click buttons and controls to operate</li><li>Drag mouse to pan</li><li>Scroll to zoom</li><li>Click top-left button to go back</li></ul>'
     }
   };
 

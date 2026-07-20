@@ -22,6 +22,17 @@
     </div>
   </div>
 
+  <!-- 教程弹窗 / Tutorial Modal -->
+  <div id="tutorial-modal" class="tutorial-modal" style="display:none;">
+    <div class="tutorial-modal-content pixel-panel">
+      <div class="tutorial-modal-header">
+        <h2 id="tutorial-title" data-i18n="tutorial_title">教程</h2>
+        <button id="tutorial-close" class="tutorial-close-btn">×</button>
+      </div>
+      <div id="tutorial-content" class="tutorial-content"></div>
+    </div>
+  </div>
+
   <!-- 像素风格工具网站首页 / App Landing Page -->
   <div id="app-landing-page" class="app-landing-page">
     <div class="app-landing-content">
@@ -788,6 +799,8 @@
     </div>
   </div>
 
+  <button class="tutorial-btn" data-page="predictor-page" data-i18n="tutorial_btn">教程</button>
+
   <footer class="pixel-panel" style="text-align:center; margin:20px;">
     <p data-i18n="footer_copyright">© 2026 Pixel Predictor · MIT License · 复古深空像素风</p>
   </footer>
@@ -854,6 +867,8 @@
     </main>
   </div>
 
+  <button class="tutorial-btn" data-page="function-page" data-i18n="tutorial_btn">教程</button>
+
   <div id="calculator-page" class="calculator-page">
     <button class="floating-back-btn" id="btn-back-home-calc" data-i18n="back_home">← 返回首页</button>
     <header class="pixel-panel" style="text-align:center; margin:20px;">
@@ -908,6 +923,8 @@
       </div>
     </main>
   </div>
+
+  <button class="tutorial-btn" data-page="calculator-page" data-i18n="tutorial_btn">教程</button>
 
   <div id="pixel-art-page" class="pixel-art-page">
     <button class="floating-back-btn" id="btn-back-home-art" data-i18n="back_home">← 返回首页</button>
@@ -1018,6 +1035,8 @@
     </main>
   </div>
 
+  <button class="tutorial-btn" data-page="pixel-art-page" data-i18n="tutorial_btn">教程</button>
+
   <!-- 像素绘图编辑器页面 / Pixel Drawing Editor Page -->
   <div id="pixel-drawing-page" class="pixel-drawing-page">
     <button class="floating-back-btn" id="btn-back-home-drawing" data-i18n="back_home">← 返回首页</button>
@@ -1104,6 +1123,8 @@
       </div>
     </div>
   </div>
+
+  <button class="tutorial-btn" data-page="pixel-drawing-page" data-i18n="tutorial_btn">教程</button>
 
   <!-- 像素音乐合成器页面 / Pixel Music Synthesizer Page -->
   <div id="pixel-music-page" class="pixel-music-page">
@@ -1566,6 +1587,7 @@
 
   <!-- Scripts loaded at end of body, in this exact order -->
   <script src="js/i18n.js"></script>
+  <script src="js/mouse-trails.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
   <script src="js/pixel-art.js"></script>
   <script src="js/pixel-music.js"></script>
