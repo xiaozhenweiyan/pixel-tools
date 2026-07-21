@@ -4148,11 +4148,11 @@
           } catch (e) { /* ignore */ }
         }
 
-        // 多参数自动创建确认弹窗（支持显式乘法 y=a*x^2+b*x+c 与隐式乘法 y=ax^2+bx+c）
+        // 参数自动创建确认弹窗（≥1 个参数即触发，支持显式乘法 y=a*x^2+b*x+c 与隐式乘法 y=ax^2+bx+c）
         try {
           if (window.ExpressionParser && result && result.ast) {
             var paramNames = window.ExpressionParser.extractParams(result.ast);
-            if (paramNames && paramNames.length >= 2) {
+            if (paramNames && paramNames.length >= 1) {
               var existingNames = (function () {
                 var fps0 = window.functionPlotterInstance;
                 if (!fps0 || !fps0.customParams) return {};
@@ -4166,10 +4166,16 @@
               var toCreate = paramNames.filter(function (n) { return !existingNames[n]; });
               if (toCreate.length >= 1) {
                 var paramList = paramNames.join(', ');
+                // 单参数和多参数使用不同文案
+                var dialogTitle = paramNames.length >= 2 ? '检测到多个参数' : '检测到参数';
+                var dialogMessage = paramNames.length >= 2
+                  ? '检测到该函数包含参数：' + paramList + '。是否自动创建这些参数的滑动条？'
+                  : '检测到该函数包含参数：' + paramList + '。是否自动创建该参数的滑动条？';
+                var dialogConfirm = paramNames.length >= 2 ? '全部创建' : '创建';
                 window.showPixelDialog({
-                  title: '检测到多个参数',
-                  message: '检测到该函数包含参数：' + paramList + '。是否自动创建这些参数的滑动条？',
-                  confirmText: '全部创建',
+                  title: dialogTitle,
+                  message: dialogMessage,
+                  confirmText: dialogConfirm,
                   cancelText: '取消',
                   onConfirm: function () {
                     var fps = window.functionPlotterInstance;
@@ -4202,7 +4208,7 @@
             }
           }
         } catch (e) {
-          console.error('多参数检测失败:', e);
+          console.error('参数检测失败:', e);
         }
       } else {
         showToast(i18n.t('toast_func_error', { msg: result.error || i18n.t('func_empty_expr') }));
