@@ -3,8 +3,8 @@
  * 像素风 2D 物理沙盒 / Pixel 2D Physics Sandbox (Falling Sand 风格)
  *
  * 功能：
- *   - 网格化元素模拟：沙子 / 水 / 石头 / 火 / 植物 / 金属 / 油 / 酸
- *   - 鼠标拖拽绘制元素，实时模拟下落 / 流动 / 燃烧 / 腐蚀 / 生长
+ *   - 网格化元素模拟：水 / 氢气（气体，可切换可见性）
+ *   - 鼠标拖拽绘制元素，实时模拟下落 / 流动 / 上浮 / 飘动
  *   - 像素风 Canvas 渲染（每格 2×2 像素），requestAnimationFrame 驱动
  *
  * 性能优化：
@@ -14,9 +14,10 @@
  *
  * 用法：
  *   PhysicsSandbox.init('physics-sandbox-canvas');
- *   PhysicsSandbox.setElement(PhysicsSandbox.SAND);
+ *   PhysicsSandbox.setElement(PhysicsSandbox.WATER);
  *   PhysicsSandbox.setBrushSize(4);
  *   PhysicsSandbox.start();
+ *   PhysicsSandbox.toggleGas();   // 切换氢气可见性
  *   PhysicsSandbox.clear();
  *   PhysicsSandbox.stop();
  */
@@ -26,32 +27,20 @@ window.PhysicsSandbox = (function () {
   // ============================================================
   // 元素类型 / Element Types
   // ============================================================
-  const EMPTY = 0;  // 空
-  const SAND  = 1;  // 沙子：下落、堆积
-  const WATER = 2;  // 水：下落 + 流动
-  const STONE = 3;  // 石头：静止
-  const FIRE  = 4;  // 火：上升、寿命有限、点燃植物/油
-  const PLANT = 5;  // 植物：静止、接触水时生长
-  const METAL = 6;  // 金属：静止
-  const OIL   = 7;  // 油：像水但更轻、可燃
-  const ACID  = 8;  // 酸：像水、腐蚀其他元素（除石头/金属）
+  const EMPTY     = 0;  // 空
+  const WATER     = 1;  // 水：下落 + 流动
+  const HYDROGEN  = 2;  // 氢气：上浮 + 飘动（气体）
 
   // ============================================================
   // 颜色 / Colors（按元素 id 索引）
   // ============================================================
   const HEX_COLORS = [
-    '#1a1a2e', // EMPTY 背景色
-    '#c2b280', // SAND  沙色
-    '#1e90ff', // WATER 蓝
-    '#808080', // STONE 灰
-    '#ff4500', // FIRE  红
-    '#228b22', // PLANT 绿
-    '#c0c0c0', // METAL 银
-    '#556b2f', // OIL   暗黄绿
-    '#adff2f'  // ACID  亮绿
+    '#1a1a2e', // EMPTY     背景色
+    '#1e90ff', // WATER     蓝
+    '#b4dcff'  // HYDROGEN  半透明淡蓝（可见时）
   ];
 
-  const ELEMENT_NAMES = ['橡皮', '沙子', '水', '石头', '火', '植物', '金属', '油', '酸'];
+  const ELEMENT_NAMES = ['橡皮', '水', '氢气'];
 
   // hex -> [r,g,b]
   function parseColor(hex) {
@@ -89,11 +78,12 @@ window.PhysicsSandbox = (function () {
   let imageData = null; // 渲染缓冲
   let running = false;
   let rafId   = null;
-  let currentElement = SAND;
+  let currentElement = WATER;
   let brushSize = 3;
   let isDrawing = false;
   let lastX = -1;
   let lastY = -1;
+  let gasVisible = false;  // 氢气是否可见（false 时渲染为背景色）
 
   // ============================================================
   // 工具函数 / Helpers
@@ -125,27 +115,6 @@ window.PhysicsSandbox = (function () {
   // 物理规则 / Physics Rules
   // ============================================================
 
-  // 沙子：尝试下落，下方被占则左下/右下；可沉入较轻液体（水/油/酸）
-  function updateSand(x, y, idx) {
-    const by = y + 1;
-    if (by >= rows) return;
-    const dir = Math.random() < 0.5 ? 1 : -1;
-    if (trySink(x, by, idx)) return;
-    if (trySink(x + dir, by, idx)) return;
-    if (trySink(x - dir, by, idx)) return;
-  }
-
-  // 沙子尝试进入目标格（空或较轻液体）
-  function trySink(tx, ty, fromIdx) {
-    if (!inBounds(tx, ty)) return false;
-    const toIdx = ty * cols + tx;
-    if (moved[toIdx]) return false;
-    const t = grid[toIdx];
-    if (t === EMPTY) { moveTo(fromIdx, toIdx); return true; }
-    if (t === WATER || t === OIL || t === ACID) { swap(fromIdx, toIdx); return true; }
-    return false;
-  }
-
   // 液体通用流动：下、下左/下右、左/右，仅流入空格
   function flowLiquid(x, y, idx) {
     const by = y + 1;
@@ -173,107 +142,39 @@ window.PhysicsSandbox = (function () {
     flowLiquid(x, y, idx);
   }
 
-  // 油：比水/酸轻，先尝试上浮到水/酸上方，否则像水一样流动
-  function updateOil(x, y, idx) {
-    const ay = y - 1;
-    if (ay >= 0) {
-      const aIdx = ay * cols + x;
-      if (!moved[aIdx] && (grid[aIdx] === WATER || grid[aIdx] === ACID)) {
-        swap(idx, aIdx);
-        return;
-      }
-    }
-    flowLiquid(x, y, idx);
-  }
-
-  // 酸：像水流动，接触可腐蚀元素时双方消失（石头/金属除外）
-  function updateAcid(x, y, idx) {
-    const neighbors = [[x, y + 1], [x, y - 1], [x - 1, y], [x + 1, y]];
-    for (let i = 0; i < neighbors.length; i++) {
-      const nx = neighbors[i][0], ny = neighbors[i][1];
-      if (!inBounds(nx, ny)) continue;
-      const nIdx = ny * cols + nx;
-      const n = grid[nIdx];
-      if (n !== EMPTY && n !== STONE && n !== METAL && n !== ACID) {
-        // 一定概率腐蚀，避免酸瞬间消失，能边流动边腐蚀
-        if (Math.random() < ACID_CORRODE_CHANCE) {
-          grid[nIdx] = EMPTY; auxGrid[nIdx] = 0; moved[nIdx] = 1;
-          grid[idx]  = EMPTY; auxGrid[idx]  = 0; moved[idx]  = 1;
-          return;
-        }
-      }
-    }
-    flowLiquid(x, y, idx);
-  }
-
-  // 火：寿命有限，向上移动，点燃相邻植物/油，遇水熄灭
-  function updateFire(x, y, idx) {
-    auxGrid[idx] -= 1;
-    if (auxGrid[idx] <= 0) {
-      grid[idx] = EMPTY; auxGrid[idx] = 0; moved[idx] = 1;
-      return;
-    }
-    const neighbors = [[x, y + 1], [x, y - 1], [x - 1, y], [x + 1, y]];
-    for (let i = 0; i < neighbors.length; i++) {
-      const nx = neighbors[i][0], ny = neighbors[i][1];
-      if (!inBounds(nx, ny)) continue;
-      const nIdx = ny * cols + nx;
-      const n = grid[nIdx];
-      if (n === PLANT || n === OIL) {
-        // 点燃：植物/油变成火，重置寿命
-        grid[nIdx] = FIRE; auxGrid[nIdx] = FIRE_LIFETIME; moved[nIdx] = 1;
-      } else if (n === WATER) {
-        // 水灭火：火消失（水保留）
-        grid[idx] = EMPTY; auxGrid[idx] = 0; moved[idx] = 1;
-        return;
-      }
-    }
-    // 向上移动（正上、上左/上右）
-    const ay = y - 1;
-    if (ay < 0) return;
+  // 氢气：比水轻，向上移动（与水相反）；可穿过水（与水 swap 模拟密度差）
+  function updateHydrogen(x, y, idx) {
+    const ay = y - 1;  // 上方
     const dir = Math.random() < 0.5 ? 1 : -1;
-    if (tryRise(x, ay, idx)) return;
-    if (tryRise(x + dir, ay, idx)) return;
-    if (tryRise(x - dir, ay, idx)) return;
+    if (ay >= 0) {
+      // 优先正上方：空或水都上浮（水则 swap）
+      if (tryRiseHydrogen(x, ay, idx)) return;
+      // 上左 / 上右（随机方向优先）
+      if (tryRiseHydrogen(x + dir, ay, idx)) return;
+      if (tryRiseHydrogen(x - dir, ay, idx)) return;
+    }
+    // 上方都阻塞时，尝试同行左/右横向飘动（仅流入空格）
+    if (tryFlow(x + dir, y, idx)) return;
+    if (tryFlow(x - dir, y, idx)) return;
   }
 
-  function tryRise(tx, ty, fromIdx) {
+  // 氢气尝试上浮到目标格（空：移动；水：swap）
+  function tryRiseHydrogen(tx, ty, fromIdx) {
     if (!inBounds(tx, ty)) return false;
     const toIdx = ty * cols + tx;
-    if (moved[toIdx] || grid[toIdx] !== EMPTY) return false;
-    moveTo(fromIdx, toIdx);
-    return true;
-  }
-
-  // 植物：静止，旁边有水时随机向空格生长
-  function updatePlant(x, y, idx) {
-    let hasWater = false;
-    const empties = [];
-    const neighbors = [[x, y + 1], [x, y - 1], [x - 1, y], [x + 1, y]];
-    for (let i = 0; i < neighbors.length; i++) {
-      const nx = neighbors[i][0], ny = neighbors[i][1];
-      if (!inBounds(nx, ny)) continue;
-      const nIdx = ny * cols + nx;
-      const n = grid[nIdx];
-      if (n === WATER) hasWater = true;
-      else if (n === EMPTY) empties.push(nIdx);
-    }
-    if (hasWater && empties.length > 0 && Math.random() < PLANT_GROW_CHANCE) {
-      const spot = empties[Math.floor(Math.random() * empties.length)];
-      grid[spot] = PLANT; auxGrid[spot] = 0; moved[spot] = 1;
-    }
+    if (moved[toIdx]) return false;
+    const t = grid[toIdx];
+    if (t === EMPTY) { moveTo(fromIdx, toIdx); return true; }
+    if (t === WATER) { swap(fromIdx, toIdx); return true; }
+    return false;
   }
 
   // 单格更新分发
   function updateCell(x, y, idx, cell) {
     switch (cell) {
-      case SAND:  updateSand(x, y, idx); break;
-      case WATER: updateWater(x, y, idx); break;
-      case OIL:   updateOil(x, y, idx); break;
-      case ACID:  updateAcid(x, y, idx); break;
-      case FIRE:  updateFire(x, y, idx); break;
-      case PLANT: updatePlant(x, y, idx); break;
-      // STONE / METAL 静止不动
+      case WATER:     updateWater(x, y, idx); break;
+      case HYDROGEN:  updateHydrogen(x, y, idx); break;
+      // EMPTY 静止不动
     }
   }
 
@@ -304,17 +205,26 @@ window.PhysicsSandbox = (function () {
     if (!imageData) return;
     const data = imageData.data;
     const w = canvas.width;
+    // 背景色 #1a1a2e = 26,26,46（与 EMPTY 相同）
+    const bg = COLOR_RGB[EMPTY];
+    const bg_r = bg[0], bg_g = bg[1], bg_b = bg[2];
+    // 氢气可见色 #b4dcff = 180,220,255；半透明混合（背景 40% + 淡蓝 60%）
+    const hg = COLOR_RGB[HYDROGEN];
+    const h_r = Math.round(bg_r * 0.4 + hg[0] * 0.6);
+    const h_g = Math.round(bg_g * 0.4 + hg[1] * 0.6);
+    const h_b = Math.round(bg_b * 0.4 + hg[2] * 0.6);
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const idx = y * cols + x;
         const cell = grid[idx];
         let r, g, b;
-        if (cell === FIRE) {
-          // 火焰闪烁效果：在橙红色范围内随机扰动
-          const f = Math.random();
-          r = 255;
-          g = 69 + Math.floor(f * 120);
-          b = Math.floor(f * 30);
+        if (cell === HYDROGEN) {
+          if (gasVisible) {
+            r = h_r; g = h_g; b = h_b;
+          } else {
+            // 不可见时渲染为背景色（与 EMPTY 一致）
+            r = bg_r; g = bg_g; b = bg_b;
+          }
         } else {
           const rgb = COLOR_RGB[cell];
           r = rgb[0]; g = rgb[1]; b = rgb[2];
@@ -352,7 +262,7 @@ window.PhysicsSandbox = (function () {
         if (!inBounds(px, py)) continue;
         const idx = py * cols + px;
         grid[idx] = currentElement;
-        auxGrid[idx] = (currentElement === FIRE) ? FIRE_LIFETIME : 0;
+        auxGrid[idx] = 0;
       }
     }
   }
@@ -514,8 +424,21 @@ window.PhysicsSandbox = (function () {
     render();
   }
 
+  // 设置气体（氢气）可见性
+  function setGasVisible(visible) {
+    gasVisible = !!visible;
+    if (grid) render();
+  }
+
+  // 切换气体可见性，返回新值
+  function toggleGas() {
+    gasVisible = !gasVisible;
+    if (grid) render();
+    return gasVisible;
+  }
+
   // 元素列表（供 UI 构建调色板：{id, name, color}）
-  const ELEMENTS = [SAND, WATER, STONE, FIRE, PLANT, METAL, OIL, ACID, EMPTY].map(function (id) {
+  const ELEMENTS = [WATER, HYDROGEN, EMPTY].map(function (id) {
     return { id: id, name: ELEMENT_NAMES[id], color: HEX_COLORS[id] };
   });
 
@@ -527,8 +450,10 @@ window.PhysicsSandbox = (function () {
     stop,
     clear,
     resize,
+    setGasVisible,
+    toggleGas,
     // 附带常量，方便外部引用元素 id
     ELEMENTS,
-    EMPTY, SAND, WATER, STONE, FIRE, PLANT, METAL, OIL, ACID
+    EMPTY, WATER, HYDROGEN
   };
 })();

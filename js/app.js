@@ -79,14 +79,19 @@
   };
 
   // ============================================================
-  // 用户档案 / User Profile (sessionStorage, 临时账号)
+  // 用户档案 / User Profile (localStorage + cookie, 持久账号)
   // ============================================================
   const PROFILE_KEY = 'pixel_user_profile';
   let profile = { nickname: '访客', avatar: '', bgType: '', bgValue: '' };
 
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]*)'));
+    return match ? match[2] : null;
+  }
+
   function loadProfile() {
     try {
-      const saved = sessionStorage.getItem(PROFILE_KEY);
+      const saved = localStorage.getItem(PROFILE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         profile = {
@@ -103,7 +108,8 @@
 
   function saveProfile() {
     try {
-      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      document.cookie = 'pixel_user_session=1; max-age=31536000; path=/; SameSite=Lax';
     } catch (e) {
       if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
         showToast(i18n.t('toast_image_too_big'));
@@ -115,7 +121,8 @@
 
   function clearProfile() {
     try {
-      sessionStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+      document.cookie = 'pixel_user_session=; max-age=0; path=/';
     } catch (e) { /* ignore */ }
     profile = { nickname: '访客', avatar: '', bgType: '', bgValue: '' };
   }
@@ -651,7 +658,6 @@
         applyBackground();
         updateFloatingAvatar();
         showAppLanding();
-        showRegisterModal();
         showToast(i18n.t('toast_logged_out'));
       });
     }
@@ -2442,6 +2448,10 @@
   // Suppress-push flag: set true during ESC/back navigation
   var _suppressHistoryPush = false;
 
+  // 页面滚动位置记录：切换页面时保存/恢复滚动位置
+  // Page scroll positions: save/restore scroll on page switch
+  var pageScrollPositions = {};
+
   // 需要记录到"最近使用"的工具页面 / pages tracked as recent tools
   var RECENT_TRACKED_PAGES = {
     'predictor-page': true,
@@ -2507,6 +2517,20 @@
   // 显示指定页面（先隐藏全部，再显示目标）
   // 同时维护页面历史栈与"最近使用"记录
   function showPage(pageId) {
+    // 保存当前可见页面的滚动位置 / save scroll of currently visible page
+    for (var i = 0; i < PAGE_IDS.length; i++) {
+      var pid = PAGE_IDS[i];
+      var pel = document.getElementById(pid);
+      if (!pel) continue;
+      if (ACTIVE_PAGES[pid] && pel.classList.contains('active')) {
+        pageScrollPositions[pid] = window.scrollY;
+        break;
+      } else if (HIDDEN_PAGES[pid] && !pel.classList.contains('hidden')) {
+        pageScrollPositions[pid] = window.scrollY;
+        break;
+      }
+    }
+
     hideAllPages();
     var el = document.getElementById(pageId);
     if (!el) return;
@@ -2534,6 +2558,10 @@
         recordRecentTool(pageId);
       }
     }
+
+    // 恢复目标页面滚动位置 / restore scroll position of target page
+    var savedScroll = pageScrollPositions[pageId] || 0;
+    window.scrollTo(0, savedScroll);
   }
 
   function showLanding() {
@@ -3034,6 +3062,16 @@
     if (clearBtn) clearBtn.addEventListener('click', function () {
       window.PhysicsSandbox.clear();
     });
+
+    var btnGas = document.getElementById('btn-physics-gas');
+    if (btnGas) {
+      btnGas.addEventListener('click', function () {
+        if (window.PhysicsSandbox && typeof window.PhysicsSandbox.toggleGas === 'function') {
+          window.PhysicsSandbox.toggleGas();
+          btnGas.classList.toggle('active');
+        }
+      });
+    }
   }
 
   // ---------- AI图像像素化 / Image Pixelizer ----------
@@ -4359,9 +4397,6 @@
     initSettings();
     // 默认显示工具首页 / show app landing page by default
     showAppLanding();
-    if (!hasProfile) {
-      showRegisterModal();
-    }
 
     // 语言切换事件监听 / language change event listener
     document.addEventListener('languagechange', function () {

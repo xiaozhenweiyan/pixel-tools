@@ -2755,7 +2755,7 @@ footer.pixel-panel p {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
   width: 100%;
-  max-width: 512px;
+  max-width: 768px;
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
@@ -6107,6 +6107,10 @@ canvas {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+#rpg-canvas {
+  cursor: pointer;
 }
 
 /* ---------- Pixel Dialog (自制像素风模态弹窗) ---------- */

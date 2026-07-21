@@ -133,6 +133,8 @@ window.PixelRPG = (function () {
       moveProgress: 0,           // 0~1
       facing: 'down',            // up/down/left/right
       frame: 0,                  // 行走动画帧 0/1
+      pathQueue: [],             // 自动导航路径队列（坐标对象数组，不含起点）
+      autoNavigating: false,     // 是否正在自动导航
       hp: 20, maxHp: 20,
       atk: 5, def: 1,
       level: 1, exp: 0, expToNext: 10
@@ -817,6 +819,115 @@ window.PixelRPG = (function () {
   }
 
   /**
+   * BFS 寻路：从起点到终点的最短路径。
+   * - 墙壁(WALL)不可通行；怪物占据格视为不可通行
+   * - 出口/宝箱/空地可通行
+   * - 终点本身是墙时直接返回 null
+   * - 终点不可走（怪物占据）时寻找其相邻 4 格中距起点最近的可走格作为实际终点
+   * - 返回路径坐标数组 [{x,y}, ...]（含起点和终点），不可达返回 null
+   */
+  function findPathBFS(startGx, startGy, endGx, endGy) {
+    // 边界检查
+    if (startGx < 0 || startGx >= MAP_W || startGy < 0 || startGy >= MAP_H) return null;
+    if (endGx < 0 || endGx >= MAP_W || endGy < 0 || endGy >= MAP_H) return null;
+
+    // 判断格子是否可走（FLOOR/EXIT/宝箱格，非 WALL、非怪物占据格）
+    function isWalkable(x, y) {
+      if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return false;
+      if (state.map[y][x] === TILE.WALL) return false;
+      for (let i = 0; i < state.monsters.length; i++) {
+        const m = state.monsters[i];
+        if (m.alive && m.gx === x && m.gy === y) return false;
+      }
+      return true;
+    }
+
+    // 终点为墙，直接不可达
+    if (state.map[endGy][endGx] === TILE.WALL) return null;
+
+    // 终点不可走（怪物占据）时，寻找相邻 4 格中距起点最近的可走格作为实际终点
+    let actualEndX = endGx, actualEndY = endGy;
+    if (!isWalkable(endGx, endGy)) {
+      const adjDirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+      let best = null;
+      let bestDist = Infinity;
+      for (let d = 0; d < adjDirs.length; d++) {
+        const nx = endGx + adjDirs[d][0];
+        const ny = endGy + adjDirs[d][1];
+        if (!isWalkable(nx, ny)) continue;
+        const dist = Math.abs(nx - startGx) + Math.abs(ny - startGy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { x: nx, y: ny };
+        }
+      }
+      if (!best) return null;
+      actualEndX = best.x;
+      actualEndY = best.y;
+    }
+
+    // BFS 主循环
+    const queue = [{ x: startGx, y: startGy }];
+    const visited = [];
+    for (let y = 0; y < MAP_H; y++) {
+      visited[y] = [];
+      for (let x = 0; x < MAP_W; x++) visited[y][x] = false;
+    }
+    visited[startGy][startGx] = true;
+
+    const parent = {};
+    const keyOf = function (x, y) { return y * MAP_W + x; };
+    const moveDirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    let found = (startGx === actualEndX && startGy === actualEndY);
+
+    while (!found && queue.length > 0) {
+      const cur = queue.shift();
+      for (let d = 0; d < moveDirs.length; d++) {
+        const nx = cur.x + moveDirs[d][0];
+        const ny = cur.y + moveDirs[d][1];
+        if (nx < 0 || nx >= MAP_W || ny < 0 || ny >= MAP_H) continue;
+        if (visited[ny][nx]) continue;
+        if (!isWalkable(nx, ny)) continue;
+        visited[ny][nx] = true;
+        parent[keyOf(nx, ny)] = { x: cur.x, y: cur.y };
+        if (nx === actualEndX && ny === actualEndY) {
+          found = true;
+          break;
+        }
+        queue.push({ x: nx, y: ny });
+      }
+    }
+
+    if (!found) return null;
+
+    // 回溯路径
+    const path = [];
+    let cur = { x: actualEndX, y: actualEndY };
+    while (cur) {
+      path.push({ x: cur.x, y: cur.y });
+      cur = parent[keyOf(cur.x, cur.y)];
+    }
+    path.reverse();
+    return path;
+  }
+
+  /**
+   * 点击地图导航：计算 BFS 路径并启动自动导航。
+   * - 玩家移动中(moving=true)或游戏结束(gameOver)时忽略
+   * - 路径不可达或长度 <2 时直接 return
+   * - 路径去掉起点后存入 pathQueue，设置 autoNavigating=true
+   */
+  function navigateTo(targetGx, targetGy) {
+    if (state.player.moving) return;   // 移动中不接收新点击
+    if (state.gameOver) return;
+    const path = findPathBFS(state.player.gx, state.player.gy, targetGx, targetGy);
+    if (!path || path.length < 2) return; // 无路或已到达
+    path.shift(); // 去掉起点
+    state.player.pathQueue = path;
+    state.player.autoNavigating = true;
+  }
+
+  /**
    * 尝试移动玩家到相邻格子（含碰撞、宝箱、怪物、出口判定）。
    */
   function tryMove(dx, dy) {
@@ -1097,6 +1208,27 @@ window.PixelRPG = (function () {
     } else {
       state.player.frame = 0;
     }
+
+    // 自动导航：玩家不在移动中时消费 pathQueue
+    if (state.player.autoNavigating && !state.player.moving) {
+      if (!state.player.pathQueue || state.player.pathQueue.length === 0) {
+        // 队列已空，结束自动导航
+        state.player.autoNavigating = false;
+      } else {
+        const next = state.player.pathQueue[0];
+        const dx = next.x - state.player.gx;
+        const dy = next.y - state.player.gy;
+        tryMove(dx, dy);
+        if (state.player.moving) {
+          // 移动已启动，消费这一步
+          state.player.pathQueue.shift();
+        } else {
+          // 被阻挡（墙/怪物战斗/宝箱打开/出口下楼/键盘接管），结束自动导航
+          state.player.pathQueue = [];
+          state.player.autoNavigating = false;
+        }
+      }
+    }
   }
 
   /**
@@ -1180,10 +1312,39 @@ window.PixelRPG = (function () {
     }
 
     if (facing) {
+      // 键盘方向键接管，中断自动导航
+      state.player.pathQueue = [];
+      state.player.autoNavigating = false;
       state.player.facing = facing;
       tryMove(dx, dy);
       e.preventDefault();
     }
+  }
+
+  /**
+   * 点击/触屏事件处理：将屏幕坐标转换为网格坐标后启动自动导航。
+   * 使用 pointer 事件同时支持鼠标和触屏。
+   */
+  function onCanvasPointerDown(e) {
+    if (!canvas) return;
+    e.preventDefault();
+    if (!state.running || state.gameOver) return;
+
+    // 屏幕坐标 → canvas 内坐标（考虑 CSS 缩放）
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const localX = (e.clientX - rect.left) * scaleX;
+    const localY = (e.clientY - rect.top) * scaleY;
+
+    // canvas 内坐标 → 网格坐标
+    const gx = Math.floor(localX / PIXEL);
+    const gy = Math.floor((localY - UI_HEIGHT) / PIXEL);
+
+    // 边界检查
+    if (gx < 0 || gx >= MAP_W || gy < 0 || gy >= MAP_H) return;
+
+    navigateTo(gx, gy);
   }
 
   // ============================================================
@@ -1207,6 +1368,8 @@ window.PixelRPG = (function () {
     initAudio();
     // 绑定键盘
     window.addEventListener('keydown', handleKeyDown);
+    // 绑定点击/触屏导航（pointer 同时支持鼠标和触屏）
+    canvas.addEventListener('pointerdown', onCanvasPointerDown);
     // 初始化游戏状态并渲染一帧
     reset();
   }
@@ -1250,6 +1413,8 @@ window.PixelRPG = (function () {
       targetGx: 1, targetGy: 1,
       moving: false, moveProgress: 0,
       facing: 'down', frame: 0,
+      pathQueue: [],
+      autoNavigating: false,
       hp: 20, maxHp: 20,
       atk: 5, def: 1,
       level: 1, exp: 0, expToNext: 10
