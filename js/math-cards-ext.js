@@ -161,9 +161,15 @@ window.MathCardsExt = (function () {
   }
 
   // 创建按钮
-  function createButton(parent, label, color, bg) {
+  function createButton(parent, label, color, bg, i18nKey) {
     const btn = document.createElement('button');
-    btn.textContent = label;
+    // 优先使用 i18n key，回退到硬编码 label
+    if (i18nKey && window.i18n && typeof window.i18n.t === 'function') {
+      btn.textContent = window.i18n.t(i18nKey) || label;
+      btn.setAttribute('data-i18n', i18nKey);
+    } else {
+      btn.textContent = label;
+    }
     btn.style.cssText = [
       'padding: 5px 12px',
       'background: ' + (bg || COLORS.accent),
@@ -273,7 +279,7 @@ window.MathCardsExt = (function () {
     panel.appendChild(slash2);
     const d2 = createInput(panel, { value: '3', width: '40px' });
 
-    const demoBtn = createButton(panel, '演示动画', COLORS.accent);
+    const demoBtn = createButton(panel, '演示动画', COLORS.accent, null, 'btn_demo_anim');
 
     // 动画状态
     let animState = null;
@@ -574,7 +580,7 @@ window.MathCardsExt = (function () {
     createLabel(panel, '小数2:');
     const dec2 = createInput(panel, { value: '0.4', width: '70px' });
 
-    const demoBtn = createButton(panel, '演示动画', COLORS.accent);
+    const demoBtn = createButton(panel, '演示动画', COLORS.accent, null, 'btn_demo_anim');
 
     let animState = null;
     let rafId = null;
@@ -940,7 +946,7 @@ window.MathCardsExt = (function () {
 
     createLabel(panel, '方程:');
     const eqInput = createInput(panel, { value: '2x+3=7', width: '140px' });
-    const demoBtn = createButton(panel, '求解演示', COLORS.accent);
+    const demoBtn = createButton(panel, '求解演示', COLORS.accent, null, 'btn_solve_demo');
     createLabel(panel, '示例: 2x+3=7 / x^2-5x+6=0', COLORS.textDim);
 
     let animState = null;
@@ -1648,7 +1654,7 @@ window.MathCardsExt = (function () {
     const panel = createPanel(canvas);
 
     // 控件
-    const startBtn = createButton(panel, '开始挑战 (60秒)', COLORS.accent);
+    const startBtn = createButton(panel, '开始挑战 (60秒)', COLORS.accent, null, 'btn_start_challenge');
     const nameInput = createInput(panel, { value: '', placeholder: '昵称', width: '100px' });
     createLabel(panel, '答对+10分 答错-5分 难度递增', COLORS.textDim);
 
