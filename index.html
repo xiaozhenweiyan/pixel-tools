@@ -1609,6 +1609,7 @@
       </button>
       <h1 class="pixel-ai-title" data-i18n="pixel_ai_title">像素AI PIXEL AI</h1>
       <div class="pixel-ai-topbar-actions">
+        <button class="pixel-btn pixel-ai-tutorial-btn" id="btn-ai-tutorial" data-i18n="pixel_ai_tutorial">教程</button>
         <button class="pixel-btn pixel-ai-clear-btn" id="btn-ai-clear" data-i18n="pixel_ai_clear">清空对话</button>
         <button class="pixel-btn pixel-ai-settings-btn" id="btn-ai-settings" data-i18n="pixel_ai_settings">设置</button>
       </div>
@@ -1672,6 +1673,74 @@
         <div class="pixel-dialog-buttons">
           <button class="pixel-btn" id="btn-ai-settings-cancel" data-i18n="pixel_ai_settings_cancel">取消</button>
           <button class="pixel-btn" id="btn-ai-settings-save" data-i18n="pixel_ai_settings_save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 教程弹窗 -->
+    <div id="ai-tutorial-modal" class="ai-tutorial-modal pixel-dialog" style="display:none;">
+      <div class="pixel-dialog-content">
+        <h2 data-i18n="pixel_ai_tutorial_title">使用教程</h2>
+        
+        <div class="ai-tutorial-content">
+          <div class="ai-tutorial-section">
+            <h3 data-i18n="pixel_ai_tutorial_step1">第一步：获取 API Key</h3>
+            <p data-i18n="pixel_ai_tutorial_step1_desc">访问您选择的 AI 服务商网站，注册账号并获取 API Key。</p>
+            <ul>
+              <li data-i18n="pixel_ai_tutorial_provider_openai">OpenAI: https://platform.openai.com/api-keys</li>
+              <li data-i18n="pixel_ai_tutorial_provider_anthropic">Anthropic: https://console.anthropic.com/settings/keys</li>
+              <li data-i18n="pixel_ai_tutorial_provider_google">Google: https://aistudio.google.com/app/apikey</li>
+              <li data-i18n="pixel_ai_tutorial_provider_qwen">通义千问: https://dashscope.console.aliyun.com/apiKey</li>
+              <li data-i18n="pixel_ai_tutorial_provider_ernie">文心一言: https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application</li>
+              <li data-i18n="pixel_ai_tutorial_provider_deepseek">DeepSeek: https://platform.deepseek.com/api_keys</li>
+              <li data-i18n="pixel_ai_tutorial_provider_mistral">Mistral: https://console.mistral.ai/api-keys/</li>
+              <li data-i18n="pixel_ai_tutorial_provider_groq">Groq: https://console.groq.com/keys</li>
+            </ul>
+          </div>
+          
+          <div class="ai-tutorial-section">
+            <h3 data-i18n="pixel_ai_tutorial_step2">第二步：配置模型</h3>
+            <p data-i18n="pixel_ai_tutorial_step2_desc">点击右上角「设置」按钮，选择模型提供商、模型版本，然后输入您的 API Key。</p>
+          </div>
+          
+          <div class="ai-tutorial-section">
+            <h3 data-i18n="pixel_ai_tutorial_step3">第三步：开始对话</h3>
+            <p data-i18n="pixel_ai_tutorial_step3_desc">在底部输入框中输入您的问题，按 Enter 发送。Shift+Enter 换行。</p>
+          </div>
+          
+          <div class="ai-tutorial-section">
+            <h3 data-i18n="pixel_ai_tutorial_errors">常见错误及解决方法</h3>
+            <div class="ai-error-guide">
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_auth">认证失败 / Authentication Failed</strong>
+                <p data-i18n="pixel_ai_error_guide_auth_desc">检查 API Key 是否正确，没有多余空格或换行符。</p>
+              </div>
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_bad_request">请求参数错误 / Bad Request</strong>
+                <p data-i18n="pixel_ai_error_guide_bad_request_desc">检查模型名称是否正确，或输入内容格式是否有误。</p>
+              </div>
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_rate">请求过于频繁 / Rate Limit</strong>
+                <p data-i18n="pixel_ai_error_guide_rate_desc">API 调用次数超过限制，请稍后再试或升级套餐。</p>
+              </div>
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_cors">跨域错误 / CORS Error</strong>
+                <p data-i18n="pixel_ai_error_guide_cors_desc">检查 API Base URL 是否正确，有些服务商需要使用特定的 API 地址。</p>
+              </div>
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_server">服务器错误 / Server Error</strong>
+                <p data-i18n="pixel_ai_error_guide_server_desc">服务商服务器暂时不可用，请稍后重试。</p>
+              </div>
+              <div class="ai-error-item">
+                <strong data-i18n="pixel_ai_error_guide_network">网络错误 / Network Error</strong>
+                <p data-i18n="pixel_ai_error_guide_network_desc">检查网络连接，确保可以访问互联网。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pixel-dialog-buttons">
+          <button class="pixel-btn" id="btn-ai-tutorial-close" data-i18n="pixel_ai_tutorial_close">关闭</button>
         </div>
       </div>
     </div>

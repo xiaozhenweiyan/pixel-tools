@@ -6616,6 +6616,70 @@ canvas {
   z-index: 1000;
 }
 
+.ai-tutorial-modal {
+  z-index: 1000;
+}
+
+.ai-tutorial-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.ai-tutorial-section {
+  margin-bottom: 20px;
+}
+
+.ai-tutorial-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.ai-tutorial-section p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ai-tutorial-section ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.ai-tutorial-section li {
+  margin-bottom: 4px;
+}
+
+.ai-error-guide {
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.ai-error-item {
+  margin-bottom: 12px;
+}
+
+.ai-error-item:last-child {
+  margin-bottom: 0;
+}
+
+.ai-error-item strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.ai-error-item p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
 .ai-settings-section {
   margin-bottom: 16px;
 }

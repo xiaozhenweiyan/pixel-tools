@@ -97,8 +97,9 @@ window.PixelAI = (function () {
       apiType: API_TYPES.OPENAI,
       baseUrl: 'https://api.deepseek.com/v1',
       models: [
-        { id: 'deepseek-chat', nameKey: 'pixel_ai_model_deepseek_chat' },
-        { id: 'deepseek-coder', nameKey: 'pixel_ai_model_deepseek_coder' }
+        { id: 'deepseek-v4-pro', nameKey: 'pixel_ai_model_deepseek_v4_pro' },
+        { id: 'deepseek-v4-flash', nameKey: 'pixel_ai_model_deepseek_v4_flash' },
+        { id: 'deepseek-coder-v2', nameKey: 'pixel_ai_model_deepseek_coder_v2' }
       ]
     },
     {
@@ -252,8 +253,11 @@ window.PixelAI = (function () {
     state.dom.sendBtn = document.getElementById('btn-ai-send');
     state.dom.clearBtn = document.getElementById('btn-ai-clear');
     state.dom.settingsBtn = document.getElementById('btn-ai-settings');
+    state.dom.tutorialBtn = document.getElementById('btn-ai-tutorial');
     state.dom.backBtn = document.getElementById('btn-back-home-ai');
     state.dom.settingsModal = document.getElementById('ai-settings-modal');
+    state.dom.tutorialModal = document.getElementById('ai-tutorial-modal');
+    state.dom.tutorialCloseBtn = document.getElementById('btn-ai-tutorial-close');
     state.dom.providerSelect = document.getElementById('ai-provider-select');
     state.dom.modelSelect = document.getElementById('ai-model-select');
     state.dom.apiKeyInput = document.getElementById('ai-api-key-input');
@@ -821,6 +825,16 @@ window.PixelAI = (function () {
     state.dom.settingsModal.style.display = 'none';
   }
 
+  function openTutorial() {
+    if (!state.dom.tutorialModal) return;
+    state.dom.tutorialModal.style.display = 'flex';
+  }
+
+  function closeTutorial() {
+    if (!state.dom.tutorialModal) return;
+    state.dom.tutorialModal.style.display = 'none';
+  }
+
   function toggleApiKeyVisibility() {
     state.showApiKey = !state.showApiKey;
     if (state.dom.apiKeyInput) {
@@ -932,6 +946,10 @@ window.PixelAI = (function () {
       state.dom.settingsBtn.addEventListener('click', openSettings);
     }
 
+    if (state.dom.tutorialBtn) {
+      state.dom.tutorialBtn.addEventListener('click', openTutorial);
+    }
+
     if (state.dom.providerSelect) {
       state.dom.providerSelect.addEventListener('change', onProviderChange);
     }
@@ -952,6 +970,14 @@ window.PixelAI = (function () {
       state.dom.settingsModal.addEventListener('click', onModalBackdropClick);
     }
 
+    if (state.dom.tutorialModal) {
+      state.dom.tutorialModal.addEventListener('click', onModalBackdropClick);
+    }
+
+    if (state.dom.tutorialCloseBtn) {
+      state.dom.tutorialCloseBtn.addEventListener('click', closeTutorial);
+    }
+
     document.addEventListener('languagechange', onLanguageChange);
   }
 
@@ -970,6 +996,9 @@ window.PixelAI = (function () {
   function onModalBackdropClick(e) {
     if (e.target === state.dom.settingsModal) {
       closeSettings();
+    }
+    if (e.target === state.dom.tutorialModal) {
+      closeTutorial();
     }
   }
 
