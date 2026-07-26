@@ -75,7 +75,8 @@
     physics: false,
     pixelizer: false,
     clock: false,
-    rpg: false
+    rpg: false,
+    pixelAI: false
   };
 
   // ============================================================
@@ -2395,6 +2396,7 @@
     'pixelizer-page',                     // AI图像像素化
     'clock-page',                         // 像素时钟
     'rpg-page',                           // 像素RPG
+    'pixel-ai-page',                      // 像素AI
     'settings-page'                      // 设置页
   ];
 
@@ -2413,6 +2415,7 @@
     'pixelizer-page': true,
     'clock-page': true,
     'rpg-page': true,
+    'pixel-ai-page': true,
     'settings-page': true
   };
 
@@ -3218,6 +3221,20 @@
     });
   }
 
+  // ---------- 像素AI / Pixel AI ----------
+  function showPixelAI() {
+    stopBackgroundTools();
+    showPage('pixel-ai-page');
+    setTimeout(initPixelAITool, 50);
+  }
+
+  function initPixelAITool() {
+    if (initFlags.pixelAI) return;
+    initFlags.pixelAI = true;
+    if (!window.PixelAI) return;
+    window.PixelAI.init();
+  }
+
   function initPageSwitching() {
     const btnPredictor = document.getElementById('btn-enter-predictor');
     const btnCalc = document.getElementById('btn-enter-calculator');
@@ -3295,12 +3312,14 @@
     const btnEnterPixelizer = document.getElementById('btn-enter-pixelizer');
     const btnEnterClock = document.getElementById('btn-enter-clock');
     const btnEnterRPG = document.getElementById('btn-enter-rpg');
+    const btnEnterPixelAI = document.getElementById('btn-enter-pixel-ai');
     if (btnEnterMaze) btnEnterMaze.addEventListener('click', showMaze);
     if (btnEnterNNVis) btnEnterNNVis.addEventListener('click', showNNVisualizer);
     if (btnEnterPhysics) btnEnterPhysics.addEventListener('click', showPhysics);
     if (btnEnterPixelizer) btnEnterPixelizer.addEventListener('click', showPixelizer);
     if (btnEnterClock) btnEnterClock.addEventListener('click', showClock);
     if (btnEnterRPG) btnEnterRPG.addEventListener('click', showRPG);
+    if (btnEnterPixelAI) btnEnterPixelAI.addEventListener('click', showPixelAI);
 
     // 新工具返回按钮 / new tool back buttons
     // 像素迷宫、神经网络可视化：返回像素编程首页 / Maze & NN Vis: back to Pixel Programming
@@ -3310,12 +3329,14 @@
     const btnBackHomePixelizer = document.getElementById('btn-back-home-pixelizer');
     const btnBackHomeClock = document.getElementById('btn-back-home-clock');
     const btnBackHomeRPG = document.getElementById('btn-back-home-rpg');
+    const btnBackHomeAI = document.getElementById('btn-back-home-ai');
     if (btnBackHomeMaze) btnBackHomeMaze.addEventListener('click', showPixelProgrammingLanding);
     if (btnBackHomeNN) btnBackHomeNN.addEventListener('click', showPixelProgrammingLanding);
     if (btnBackHomePhysics) btnBackHomePhysics.addEventListener('click', showAppLanding);
     if (btnBackHomePixelizer) btnBackHomePixelizer.addEventListener('click', showAppLanding);
     if (btnBackHomeClock) btnBackHomeClock.addEventListener('click', showAppLanding);
     if (btnBackHomeRPG) btnBackHomeRPG.addEventListener('click', showAppLanding);
+    if (btnBackHomeAI) btnBackHomeAI.addEventListener('click', showAppLanding);
   }
 
   // ============================================================
@@ -3548,6 +3569,7 @@
     'pixelizer-page': showPixelizer,
     'clock-page': showClock,
     'rpg-page': showRPG,
+    'pixel-ai-page': showPixelAI,
     'settings-page': showSettings
   };
 

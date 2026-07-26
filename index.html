@@ -90,6 +90,26 @@
               <div class="app-landing-card-desc" data-i18n="card_pixel_programming_desc">像素迷宫 · 神经网络可视化</div>
             </div>
           </button>
+          <button class="app-landing-card" id="btn-enter-pixel-ai">
+            <div class="app-landing-card-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="6" y="6" width="36" height="36" stroke="#ffd700" stroke-width="3" fill="#1a1a2e"/>
+                <rect x="14" y="12" width="20" height="18" fill="#1e90ff"/>
+                <rect x="18" y="18" width="4" height="4" fill="#ffd700"/>
+                <rect x="26" y="18" width="4" height="4" fill="#ffd700"/>
+                <rect x="20" y="26" width="8" height="2" fill="#ff4500"/>
+                <rect x="22" y="8" width="4" height="4" fill="#ffd700"/>
+                <rect x="10" y="18" width="4" height="8" fill="#1e90ff"/>
+                <rect x="34" y="18" width="4" height="8" fill="#1e90ff"/>
+                <rect x="12" y="34" width="24" height="6" fill="#228b22"/>
+                <rect x="32" y="36" width="2" height="2" fill="#228b22"/>
+              </svg>
+            </div>
+            <div class="app-landing-card-body">
+              <div class="app-landing-card-title" data-i18n="card_pixel_ai_title">像素AI</div>
+              <div class="app-landing-card-desc" data-i18n="card_pixel_ai_desc">AI对话聊天 · 多模型支持 · Token消耗统计</div>
+            </div>
+          </button>
         </div>
         <div class="app-landing-category">
           <div class="app-landing-category-title" data-category="art"><span data-i18n="category_art">艺术类 ART</span><span class="category-toggle-icon" aria-hidden="true">▼</span></div>
@@ -1580,6 +1600,83 @@
   <button class="tutorial-btn" data-page="rpg-page" data-i18n="tutorial_btn">教程</button>
   </div>
 
+  <!-- 像素AI页面 / Pixel AI Page -->
+  <div id="pixel-ai-page" class="page pixel-ai-page hidden">
+    <!-- 顶部栏 -->
+    <div class="pixel-ai-topbar">
+      <button class="pixel-btn pixel-ai-back-btn" id="btn-back-home-ai">
+        &larr; <span data-i18n="pixel_ai_back">返回</span>
+      </button>
+      <h1 class="pixel-ai-title" data-i18n="pixel_ai_title">像素AI PIXEL AI</h1>
+      <div class="pixel-ai-topbar-actions">
+        <button class="pixel-btn pixel-ai-clear-btn" id="btn-ai-clear" data-i18n="pixel_ai_clear">清空对话</button>
+        <button class="pixel-btn pixel-ai-settings-btn" id="btn-ai-settings" data-i18n="pixel_ai_settings">设置</button>
+      </div>
+    </div>
+
+    <!-- 消息列表区 -->
+    <div class="pixel-ai-messages" id="ai-messages"></div>
+
+    <!-- Token 状态栏 -->
+    <div class="pixel-ai-token-bar" id="ai-token-bar">
+      <span class="token-label" data-i18n="pixel_ai_token_total_session">会话总 Token:</span>
+      <span class="token-value" id="ai-total-tokens">0</span>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="pixel-ai-input-area">
+      <textarea class="pixel-ai-input pixel-input" id="ai-input" rows="3" data-i18n="pixel_ai_placeholder" placeholder="输入消息..."></textarea>
+      <button class="pixel-btn pixel-ai-send-btn" id="btn-ai-send" data-i18n="pixel_ai_send">发送</button>
+    </div>
+
+    <!-- 模型设置弹窗 -->
+    <div id="ai-settings-modal" class="ai-settings-modal pixel-dialog" style="display:none;">
+      <div class="pixel-dialog-content">
+        <h2 data-i18n="pixel_ai_settings_title">模型设置</h2>
+        
+        <div class="ai-settings-section">
+          <label class="settings-label" data-i18n="pixel_ai_settings_provider">模型提供商</label>
+          <select id="ai-provider-select" class="pixel-input">
+            <option value="openai" data-i18n="pixel_ai_provider_openai">OpenAI</option>
+            <option value="anthropic" data-i18n="pixel_ai_provider_anthropic">Anthropic</option>
+            <option value="google" data-i18n="pixel_ai_provider_google">Google Gemini</option>
+            <option value="qwen" data-i18n="pixel_ai_provider_qwen">通义千问</option>
+            <option value="ernie" data-i18n="pixel_ai_provider_ernie">文心一言</option>
+            <option value="deepseek" data-i18n="pixel_ai_provider_deepseek">DeepSeek</option>
+            <option value="mistral" data-i18n="pixel_ai_provider_mistral">Mistral</option>
+            <option value="groq" data-i18n="pixel_ai_provider_groq">Groq</option>
+            <option value="custom" data-i18n="pixel_ai_provider_custom">自定义 (OpenAI 兼容)</option>
+          </select>
+        </div>
+
+        <div class="ai-settings-section">
+          <label class="settings-label" data-i18n="pixel_ai_settings_model">模型</label>
+          <select id="ai-model-select" class="pixel-input"></select>
+        </div>
+
+        <div class="ai-settings-section">
+          <label class="settings-label" data-i18n="pixel_ai_settings_api_key">API Key</label>
+          <div class="ai-api-key-row">
+            <input type="password" id="ai-api-key-input" class="pixel-input" placeholder="sk-...">
+            <button type="button" class="pixel-btn" id="btn-ai-toggle-key" data-i18n="pixel_ai_settings_show">显示</button>
+          </div>
+        </div>
+
+        <div class="ai-settings-section" id="ai-base-url-section" style="display:none;">
+          <label class="settings-label" data-i18n="pixel_ai_settings_base_url">API Base URL</label>
+          <input type="text" id="ai-base-url-input" class="pixel-input" placeholder="https://api.example.com/v1">
+        </div>
+
+        <p class="ai-security-hint" data-i18n="pixel_ai_settings_security_hint">API Key 仅保存在本地浏览器，不上传任何服务器</p>
+
+        <div class="pixel-dialog-buttons">
+          <button class="pixel-btn" id="btn-ai-settings-cancel" data-i18n="pixel_ai_settings_cancel">取消</button>
+          <button class="pixel-btn" id="btn-ai-settings-save" data-i18n="pixel_ai_settings_save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="settings-page" class="settings-page">
     <button id="btn-back-home-settings" class="floating-back-btn" data-i18n="btn_back_home" data-i18n-aria-label="btn_back_home_aria" aria-label="返回首页">←</button>
     <header class="pixel-panel" style="text-align:center; margin:20px;">
@@ -1697,6 +1794,7 @@
   <script src="js/image-pixelizer.js"></script>
   <script src="js/pixel-clock.js"></script>
   <script src="js/pixel-rpg.js"></script>
+  <script src="js/pixel-ai.js"></script>
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {

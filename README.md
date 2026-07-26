@@ -23,6 +23,7 @@
 - [Core Features](#core-features)
 - [Tool Directory](#tool-directory)
   - [Learning](#learning)
+    - [Pixel AI](#像素-ai-pixel-ai)
   - [Art](#art)
   - [Sandbox](#sandbox)
   - [Tools](#tools)
@@ -57,6 +58,7 @@
 - [核心特性](#核心特性)
 - [工具目录](#工具目录)
   - [学习类 LEARNING](#学习类-learning)
+    - [像素AI](#像素-ai-pixel-ai)
   - [艺术类 ART](#艺术类-art)
   - [沙盒类 SANDBOX](#沙盒类-sandbox)
   - [工具类 TOOLS](#工具类-tools)
@@ -163,6 +165,26 @@ Math learning card collection, helping understand math concepts through animatio
 - **Equation EQUATION**: Linear/quadratic equations in one variable, balance scale animation solving.
 - **Geometry GEOMETRY**: Area/perimeter/volume formulas, interactive shapes.
 - **Speed Challenge SPEED CHALLENGE**: 60-second timed quiz, local leaderboard.
+
+#### 像素 AI PIXEL AI
+
+AI chat tool supporting major large language models.
+
+- **Multi-provider support**: 9 providers + custom OpenAI-compatible endpoint
+  - OpenAI (GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-3.5 Turbo)
+  - Anthropic (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku)
+  - Google Gemini (Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro)
+  - Qwen / 通义千问 (Qwen Max, Qwen Plus, Qwen Turbo, Qwen Long)
+  - ERNIE / 文心一言 (ERNIE 4.0, ERNIE 3.5, ERNIE Lite)
+  - DeepSeek (DeepSeek Chat, DeepSeek Coder)
+  - Mistral (Mistral Large, Mistral Medium, Mistral Small)
+  - Groq (Llama 3.3 70B, Mixtral 8x7B, Gemma 7B)
+  - Custom: OpenAI-compatible API endpoints
+- **Local API Key storage**: API keys stored only in browser localStorage, never uploaded to any server
+- **Token usage tracking**: per-message input/output/total tokens + session total
+- **Chat history**: messages retained within session
+- **Bilingual UI**: full Chinese/English interface
+- **Clear chat**: one-click clear all messages
 
 ### Art
 
@@ -882,6 +904,12 @@ cd wasm
 
 ## Changelog
 
+### 2026-07 · Pixel AI chat tool
+
+- **Pixel AI chat tool** — New AI chat tool with 9 LLM providers, token usage tracking, local API key storage, bilingual UI
+
+---
+
 ### 2026-07 · RPG Wiki Encyclopedia + Floor System Refactor + Site-wide i18n Improvement
 
 - **RPG Wiki Encyclopedia Button**: Added a "Wiki Encyclopedia" button to the console (English Wikipedia), clicking opens a documentation page.
@@ -1123,6 +1151,26 @@ Pixel Tools 是一个纯前端的工具集合网站，采用复古深空像素�
 - **方程 EQUATION**：一元一次/二次方程，天平动画求解。
 - **几何 GEOMETRY**：面积/周长/体积公式，互动图形。
 - **速算挑战 SPEED CHALLENGE**：60 秒限时答题，本地排行榜。
+
+#### 像素 AI PIXEL AI
+
+AI 聊天工具，支持多种主流大模型。
+
+- **多提供商支持**：9 家提供商 + 自定义 OpenAI 兼容接口
+  - OpenAI（GPT-4o、GPT-4o Mini、GPT-4 Turbo、GPT-3.5 Turbo）
+  - Anthropic（Claude 3.5 Sonnet、Claude 3 Opus、Claude 3 Haiku）
+  - Google Gemini（Gemini 1.5 Pro、Gemini 1.5 Flash、Gemini 1.0 Pro）
+  - 通义千问（Qwen Max、Qwen Plus、Qwen Turbo、Qwen Long）
+  - 文心一言（ERNIE 4.0、ERNIE 3.5、ERNIE Lite）
+  - DeepSeek（DeepSeek Chat、DeepSeek Coder）
+  - Mistral（Mistral Large、Mistral Medium、Mistral Small）
+  - Groq（Llama 3.3 70B、Mixtral 8x7B、Gemma 7B）
+  - 自定义：OpenAI 兼容 API 接口
+- **本地存储 API Key**：密钥仅保存在浏览器 localStorage 中，不上传任何服务器
+- **Token 消耗统计**：每条消息显示输入/输出/总计 Token，以及会话累计
+- **消息历史**：单次会话内保留对话记录
+- **双语界面**：完整中英文界面
+- **清空对话**：一键清空所有消息
 
 ### 艺术类 ART
 
@@ -1841,6 +1889,12 @@ cd wasm
 ---
 
 ## 更新日志
+
+### 2026-07 · 像素 AI 聊天工具
+
+- **像素 AI 聊天工具** — 新增 AI 聊天工具，支持 9 家大模型提供商、Token 消耗统计、本地存储 API Key、双语界面
+
+---
 
 ### 2026-07 · RPG Wiki 百科 + 层数改造 + 全站 i18n 完善
 

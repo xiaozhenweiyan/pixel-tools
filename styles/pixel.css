@@ -5126,7 +5126,8 @@ canvas {
 .physics-page,
 .pixelizer-page,
 .clock-page,
-.rpg-page {
+.rpg-page,
+.pixel-ai-page {
   display: none;
 }
 .maze-page.active,
@@ -5136,7 +5137,8 @@ canvas {
 .physics-page.active,
 .pixelizer-page.active,
 .clock-page.active,
-.rpg-page.active {
+.rpg-page.active,
+.pixel-ai-page.active {
   display: block;
 }
 
@@ -6412,6 +6414,256 @@ canvas {
 
 #rpg-canvas {
   cursor: pointer;
+}
+
+/* ============================================================
+   像素 AI 聊天页面 / Pixel AI Chat Page
+   ============================================================ */
+.pixel-ai-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.pixel-ai-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #2d2d44;
+  border: 3px solid #ffd700;
+  box-shadow: 4px 4px 0 #000;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.pixel-ai-back-btn {
+  font-size: 13px;
+}
+
+.pixel-ai-title {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 18px;
+  color: #ffd700;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.pixel-ai-topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pixel-ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #1a1a2e;
+  border: 3px solid #3d3d54;
+  box-shadow: 4px 4px 0 #000;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-message {
+  display: flex;
+  gap: 10px;
+  max-width: 80%;
+  animation: aiMsgFadeIn 0.2s ease-out;
+}
+
+@keyframes aiMsgFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ai-message-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: 12px;
+  border: 2px solid #ffd700;
+  background: #2d2d44;
+  color: #ffd700;
+}
+
+.ai-message.user .ai-message-avatar {
+  background: #1e90ff;
+  color: #fff;
+  border-color: #1e90ff;
+}
+
+.ai-message-bubble {
+  background: #2d2d44;
+  border: 2px solid #3d3d54;
+  padding: 10px 14px;
+  color: #f0f0f0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.ai-message.user .ai-message-bubble {
+  background: #1e3a5f;
+  border-color: #1e90ff;
+}
+
+.ai-message-meta {
+  font-size: 11px;
+  color: #8888aa;
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+}
+
+.ai-message-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-thinking {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ai-thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: #2d2d44;
+  border: 2px solid #3d3d54;
+}
+
+.ai-thinking-dots span {
+  width: 8px;
+  height: 8px;
+  background: #ffd700;
+  animation: aiBlink 1.4s infinite;
+}
+
+.ai-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes aiBlink {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+
+.pixel-ai-token-bar {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: #2d2d44;
+  border: 2px solid #3d3d54;
+  border-bottom: none;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: #8888aa;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pixel-ai-token-bar .token-value {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.pixel-ai-input-area {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #2d2d44;
+  border: 3px solid #ffd700;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.pixel-ai-input {
+  flex: 1;
+  resize: none;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  min-height: 60px;
+  max-height: 150px;
+}
+
+.pixel-ai-send-btn {
+  align-self: flex-end;
+  padding: 8px 20px;
+  font-size: 14px;
+}
+
+/* AI 设置弹窗 / AI Settings Modal */
+.ai-settings-modal {
+  z-index: 1000;
+}
+
+.ai-settings-section {
+  margin-bottom: 16px;
+}
+
+.ai-api-key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-api-key-row .pixel-input {
+  flex: 1;
+}
+
+.ai-security-hint {
+  font-size: 12px;
+  color: #8888aa;
+  margin: 12px 0;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .pixel-ai-page {
+    padding: 8px;
+    height: calc(100vh - 50px);
+  }
+  .pixel-ai-title {
+    font-size: 14px;
+  }
+  .pixel-ai-topbar {
+    padding: 8px 10px;
+  }
+  .pixel-ai-messages {
+    padding: 10px;
+  }
+  .ai-message {
+    max-width: 90%;
+  }
+  .ai-message-bubble {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .pixel-ai-input-area {
+    padding: 8px;
+  }
 }
 
 /* ---------- Pixel Dialog (自制像素风模态弹窗) ---------- */
