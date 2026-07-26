@@ -5136,15 +5136,13 @@ canvas {
 .math-ext-page.active,
 .physics-page.active,
 .pixelizer-page.active,
-.clock-page.active,
-.rpg-page.active,
-.pixel-ai-page.active {
+.maze-page.active,
+.rpg-page.active {
   display: block;
 }
-
-/* ============================================================
-   像素迷宫页面 / Maze Generator Page
-   ============================================================ */
+.pixel-ai-page.active {
+  display: flex;
+}
 .maze-layout {
   display: grid;
   grid-template-columns: 3fr 2fr;
@@ -6419,8 +6417,7 @@ canvas {
 /* ============================================================
    像素 AI 聊天页面 / Pixel AI Chat Page
    ============================================================ */
-.pixel-ai-page {
-  display: flex;
+.pixel-ai-page.active {
   flex-direction: column;
   height: calc(100vh - 60px);
   max-width: 900px;

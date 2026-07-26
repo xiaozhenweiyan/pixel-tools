@@ -300,51 +300,52 @@ Weight modes supported:
 
 ```
 pixel-tools/
-├── index.html                  # 主页面（包含所有页面 div，通过 hidden 类切换）
+├── index.html                  # Main entry HTML (all page divs, toggled via hidden class)
 ├── styles/
-│   └── pixel.css               # 全局样式（CSS Variables + 像素风组件）
+│   └── pixel.css               # Global styles (CSS Variables + pixel-art components)
 ├── js/
-│   ├── app.js                  # 主应用逻辑（页面切换、历史栈、首页增强、教程系统）
-│   ├── i18n.js                 # 国际化（中英文双语，含每页专属教程内容）
-│   ├── mouse-trails.js         # 鼠标拖拽粒子特效（最顶层 canvas，pointer-events: none）
-│   ├── expression-parser.js    # 表达式解析（AST，用于计算器和函数系统）
-│   ├── predictors.js           # 40 种序列预测方法
-│   ├── weights.js              # 权重计算 + 回测（backtest / computeWeights / ensemblePredict）
-│   ├── nn.js                   # 神经网络（含增量训练、长期训练模式）
-│   ├── funcfit.js              # 函数拟合（带 R² 评估）
-│   ├── overfit.js              # 过拟合算法（独立，不参与融合）
-│   ├── offsetfit.js            # 偏移算法（独立，不参与融合）
-│   ├── chart.js                # 折线图 + 权重条形图（自制像素风滚动条 + 缩放按钮）
-│   ├── function-plotter.js     # 2D 函数绘制（坐标系、单位长度、参数滑动条、动画）
-│   ├── function-3d.js          # 3D 函数渲染（z=f(x,y)，鼠标旋转视角）
-│   ├── math-cards.js           # 数学学习卡片（四则运算 + 混合运算）
-│   ├── math-cards-ext.js       # 数学卡片扩展（分数 / 小数 / 方程 / 几何 / 速算）
-│   ├── maze-generator.js       # 迷宫生成器（4 种算法 + BFS 求解动画）
-│   ├── nn-visualizer.js        # 神经网络可视化（前向/反向传播、损失曲线、决策边界）
-│   ├── pixel-art.js            # 像素艺术生成器（8 种艺术模式，依赖 p5.js）
-│   ├── pixel-drawing-editor.js # 像素绘图编辑器（多图层 + 调色板 + 工具栏）
-│   ├── pixel-music.js          # 像素音乐合成器（Web Audio API + 音序器 + 示波器）
-│   ├── physics-sandbox.js      # 物理模拟器（Falling Sand 风格，元素互动）
-│   ├── image-pixelizer.js      # 图像像素化（调色板量化 + 颜色限制）
-│   ├── pixel-clock.js          # 像素时钟（时钟 + 日历 + 番茄钟）
-│   └── pixel-rpg.js            # 像素 RPG（回合制战斗 + 升级）
+│   ├── app.js                  # Main app logic (page switching, history stack, home enhancements, tutorials)
+│   ├── i18n.js                 # Internationalization (Chinese/English bilingual, per-page tutorial content)
+│   ├── mouse-trails.js         # Mouse drag particle effects (topmost canvas, pointer-events: none)
+│   ├── expression-parser.js    # Expression parser (AST, used by calculator and function system)
+│   ├── predictors.js           # 40 sequence prediction methods
+│   ├── weights.js              # Weight calculation + backtesting (backtest / computeWeights / ensemblePredict)
+│   ├── nn.js                   # Neural network (incremental training, long-term training mode)
+│   ├── funcfit.js              # Function fitting (with R² evaluation)
+│   ├── overfit.js              # Overfitting algorithm (independent, not part of ensemble)
+│   ├── offsetfit.js            # Offset algorithm (independent, not part of ensemble)
+│   ├── chart.js                # Line chart + weight bar chart (custom pixel-style scrollbar + zoom buttons)
+│   ├── function-plotter.js     # 2D function plotting (coordinate system, unit length, parameter sliders, animation)
+│   ├── function-3d.js          # 3D function rendering (z=f(x,y), mouse rotation)
+│   ├── math-cards.js           # Math learning cards (arithmetic + mixed operations)
+│   ├── math-cards-ext.js       # Math cards extension (fractions / decimals / equations / geometry / speed math)
+│   ├── maze-generator.js       # Maze generator (4 algorithms + BFS solve animation)
+│   ├── nn-visualizer.js        # Neural network visualizer (forward/backprop, loss curve, decision boundary)
+│   ├── pixel-art.js            # Pixel art generator (8 art modes, requires p5.js)
+│   ├── pixel-drawing-editor.js # Pixel drawing editor (multi-layer + palette + toolbar)
+│   ├── pixel-music.js          # Pixel music synthesizer (Web Audio API + sequencer + oscilloscope)
+│   ├── physics-sandbox.js      # Physics simulator (Falling Sand style, element interactions)
+│   ├── image-pixelizer.js      # Image pixelizer (palette quantization + color limit)
+│   ├── pixel-clock.js          # Pixel clock (clock + calendar + pomodoro timer)
+│   ├── pixel-rpg.js            # Pixel RPG (turn-based combat + leveling)
+│   └── pixel-ai.js             # Pixel AI chat (9 LLM providers, token tracking, bilingual)
 ├── wasm/
-│   ├── reaction-diffusion.c    # 反应扩散 C 源码（Gray-Scott 模型）
-│   └── build.sh                # Emscripten 编译脚本
-├── mcp-server/                 # MCP Server（FastMCP + Python）
-│   ├── server.py               # 主服务（calculate / predict_sequence / list_predictors）
-│   ├── requirements.txt        # 依赖（mcp）
-│   └── README.md               # MCP Server 文档
+│   ├── reaction-diffusion.c    # Reaction-diffusion C source (Gray-Scott model)
+│   └── build.sh                # Emscripten build script
+├── mcp-server/                 # MCP Server (FastMCP + Python)
+│   ├── server.py               # Main service (calculate / predict_sequence / list_predictors)
+│   ├── requirements.txt        # Dependencies (mcp)
+│   └── README.md               # MCP Server documentation
 ├── icons/
-│   ├── icon-192.png            # PWA 图标 192px
-│   └── icon-512.png            # PWA 图标 512px
+│   ├── icon-192.png            # PWA icon 192px
+│   └── icon-512.png            # PWA icon 512px
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # GitHub Actions 自动部署到 Pages
-├── service-worker.js           # PWA Service Worker（Network-First 策略）
+│       └── deploy.yml          # GitHub Actions auto-deploy to Pages
+├── service-worker.js           # PWA Service Worker (Network-First strategy)
 ├── manifest.json               # PWA Manifest
 ├── .gitignore
-└── README.md                   # 本文档
+└── README.md                   # This document
 ```
 
 ---
@@ -1313,7 +1314,8 @@ pixel-tools/
 │   ├── physics-sandbox.js      # 物理模拟器（Falling Sand 风格，元素互动）
 │   ├── image-pixelizer.js      # 图像像素化（调色板量化 + 颜色限制）
 │   ├── pixel-clock.js          # 像素时钟（时钟 + 日历 + 番茄钟）
-│   └── pixel-rpg.js            # 像素 RPG（回合制战斗 + 升级）
+│   ├── pixel-rpg.js            # 像素 RPG（回合制战斗 + 升级）
+│   └── pixel-ai.js             # 像素 AI 聊天（9 家大模型、Token 统计、双语）
 ├── wasm/
 │   ├── reaction-diffusion.c    # 反应扩散 C 源码（Gray-Scott 模型）
 │   └── build.sh                # Emscripten 编译脚本

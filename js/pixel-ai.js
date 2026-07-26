@@ -909,11 +909,36 @@ window.PixelAI = (function () {
 
     loadSettings();
     bindEvents();
+
+    // 如果消息列表为空，显示欢迎消息 / show welcome message if empty
+    if (state.messages.length === 0) {
+      renderWelcomeMessage();
+    }
+
     renderTokenStats();
 
     if (state.dom.input) {
       state.dom.input.placeholder = t('pixel_ai_placeholder');
     }
+  }
+
+  function renderWelcomeMessage() {
+    if (!state.dom.messages) return;
+    var welcomeText = t('pixel_ai_welcome');
+    var msgEl = document.createElement('div');
+    msgEl.className = 'ai-message assistant';
+
+    var avatar = document.createElement('div');
+    avatar.className = 'ai-message-avatar';
+    avatar.textContent = t('pixel_ai_assistant');
+
+    var bubble = document.createElement('div');
+    bubble.className = 'ai-message-bubble';
+    bubble.textContent = welcomeText;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(bubble);
+    state.dom.messages.appendChild(msgEl);
   }
 
   // ============================================================
