@@ -42,6 +42,10 @@
       category_pixel_drawing: 'PIXEL DRAWING 像素图画',
       category_pixel_music: 'PIXEL MUSIC 像素音乐',
       footer_github: 'GitHub 仓库：xiaozhenweiyan/pixel-tools',
+      footer_official: '正式版仓库：xiaozhenweiyan/pixel-tools',
+      footer_test: '测试版仓库：xiaozhenweiyan/pixel-tools-test',
+      footer_feishu: '飞书文档：网站介绍与教程',
+      footer_intro: '网站介绍仓库：xiaozhenweiyan/pixel-tools-intro',
 
       // 最近使用 / Recent Tools
       recent_tools_title: '最近使用 RECENT',
@@ -1089,6 +1093,10 @@
       category_pixel_drawing: 'PIXEL DRAWING',
       category_pixel_music: 'PIXEL MUSIC',
       footer_github: 'GitHub: xiaozhenweiyan/pixel-tools',
+      footer_official: 'Official Repo: xiaozhenweiyan/pixel-tools',
+      footer_test: 'Test Repo: xiaozhenweiyan/pixel-tools-test',
+      footer_feishu: 'Feishu Doc: Site Intro & Tutorials',
+      footer_intro: 'Intro Repo: xiaozhenweiyan/pixel-tools-intro',
 
       // Recent Tools
       recent_tools_title: 'RECENT',

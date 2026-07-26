@@ -1930,6 +1930,10 @@ footer.pixel-panel p {
   letter-spacing: 1px;
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
 }
 .app-landing-footer a {
   color: #ffd700;
