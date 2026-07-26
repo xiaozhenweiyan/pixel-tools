@@ -160,11 +160,18 @@ window.PixelAI = (function () {
   // 工具函数 / Utility Functions
   // ============================================================
 
-  function t(key) {
+  function t(key, params) {
     if (window.i18n && typeof window.i18n.t === 'function') {
-      return window.i18n.t(key);
+      return window.i18n.t(key, params);
     }
-    return key;
+    // fallback: 简单的占位符替换 / simple placeholder replacement
+    var text = key;
+    if (params && typeof params === 'object') {
+      text = key.replace(/\{(\w+)\}/g, function (match, paramKey) {
+        return params.hasOwnProperty(paramKey) ? params[paramKey] : match;
+      });
+    }
+    return text;
   }
 
   function getProvider(providerId) {
@@ -400,6 +407,28 @@ window.PixelAI = (function () {
   // API 调用 / API Calls
   // ============================================================
 
+  async function safeFetch(url, options) {
+    try {
+      return await fetch(url, options);
+    } catch (e) {
+      // 网络错误 / Network error
+      var wrappedErr = new Error('NETWORK_ERROR');
+      wrappedErr.status = 0;
+      wrappedErr.detail = e && e.message ? e.message : 'Network request failed';
+      // 检查是否是 URL 无效
+      if (e && e.message && e.message.indexOf('Failed to construct URL') !== -1) {
+        wrappedErr = new Error('INVALID_BASE_URL');
+        wrappedErr.status = 0;
+        wrappedErr.detail = e.message;
+      }
+      // 检查是否是 CORS 相关（通过消息特征判断）
+      if (e && e.message && e.message.toLowerCase().indexOf('cors') !== -1) {
+        wrappedErr.detail = e.message;
+      }
+      throw wrappedErr;
+    }
+  }
+
   async function callApi(userMessage) {
     var provider = getProvider(state.settings.provider);
     var apiType = provider.apiType;
@@ -424,7 +453,7 @@ window.PixelAI = (function () {
 
   async function callOpenAI(baseUrl, model, apiKey) {
     var messages = buildOpenAIMessages();
-    var response = await fetch(baseUrl + '/chat/completions', {
+    var response = await safeFetch(baseUrl + '/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -465,7 +494,7 @@ window.PixelAI = (function () {
 
   async function callAnthropic(baseUrl, model, apiKey) {
     var messages = buildAnthropicMessages();
-    var response = await fetch(baseUrl + '/messages', {
+    var response = await safeFetch(baseUrl + '/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -510,7 +539,7 @@ window.PixelAI = (function () {
   async function callGoogle(baseUrl, model, apiKey) {
     var contents = buildGoogleContents();
     var url = baseUrl + '/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey);
-    var response = await fetch(url, {
+    var response = await safeFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -593,6 +622,7 @@ window.PixelAI = (function () {
   async function handleApiError(response) {
     var status = response.status;
     var errorMsg = '';
+    var errorType = 'UNKNOWN_ERROR';
 
     try {
       var data = await response.json();
@@ -600,25 +630,40 @@ window.PixelAI = (function () {
         errorMsg = data.error.message;
       } else if (data.error) {
         errorMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+      } else if (data.message) {
+        errorMsg = data.message;
+      } else if (data.error_msg) {
+        errorMsg = data.error_msg;
+      } else if (data.code && data.message) {
+        errorMsg = '[' + data.code + '] ' + data.message;
       }
     } catch (e) {
       // 无法解析错误体 / unable to parse error body
     }
 
-    if (status === 401 || status === 403) {
-      var err1 = new Error('AUTH_ERROR');
-      err1.detail = errorMsg;
-      throw err1;
-    } else if (status === 429) {
-      var err2 = new Error('RATE_LIMIT');
-      err2.detail = errorMsg;
-      throw err2;
-    } else {
-      var err3 = new Error('UNKNOWN_ERROR');
-      err3.status = status;
-      err3.detail = errorMsg;
-      throw err3;
+    // 如果没有解析到错误消息，尝试用 statusText
+    if (!errorMsg && response.statusText) {
+      errorMsg = response.statusText;
     }
+
+    if (status === 401 || status === 403) {
+      errorType = 'AUTH_ERROR';
+    } else if (status === 429) {
+      errorType = 'RATE_LIMIT';
+    } else if (status === 400) {
+      errorType = 'BAD_REQUEST';
+    } else if (status === 404) {
+      errorType = 'NOT_FOUND';
+    } else if (status >= 500) {
+      errorType = 'SERVER_ERROR';
+    } else {
+      errorType = 'UNKNOWN_ERROR';
+    }
+
+    var err = new Error(errorType);
+    err.status = status;
+    err.detail = errorMsg;
+    throw err;
   }
 
   // ============================================================
@@ -652,7 +697,9 @@ window.PixelAI = (function () {
       renderTokenStats();
     } catch (e) {
       removeThinkingMessage();
-      var errorText = getErrorMessage(e);
+      // 控制台输出便于调试（不输出 API Key）/ console log for debugging (no API key)
+      console.warn('[PixelAI] Error:', e.message, e.status || '', e.detail || '');
+      var errorText = buildErrorMessage(e);
       appendMessage('assistant', errorText, true);
     }
 
@@ -660,20 +707,63 @@ window.PixelAI = (function () {
     updateSendButtonState();
   }
 
-  function getErrorMessage(e) {
+  function buildErrorMessage(e) {
+    var lines = [];
+
+    // 主错误消息 / main error message
+    var mainMsg = t('pixel_ai_error_unknown');
+
     if (e.message === 'NO_API_KEY') {
-      return t('pixel_ai_no_key');
+      mainMsg = t('pixel_ai_no_key');
+    } else if (e.message === 'AUTH_ERROR') {
+      mainMsg = t('pixel_ai_error_auth');
+    } else if (e.message === 'RATE_LIMIT') {
+      mainMsg = t('pixel_ai_error_rate');
+    } else if (e.message === 'BAD_REQUEST') {
+      mainMsg = t('pixel_ai_error_bad_request');
+    } else if (e.message === 'NOT_FOUND') {
+      mainMsg = t('pixel_ai_error_not_found');
+    } else if (e.message === 'SERVER_ERROR') {
+      mainMsg = t('pixel_ai_error_server');
+    } else if (e.message === 'INVALID_BASE_URL') {
+      mainMsg = t('pixel_ai_error_invalid_base_url');
+    } else if (e.message === 'NETWORK_ERROR' || isNetworkError(e)) {
+      mainMsg = t('pixel_ai_error_network');
+      // 尝试判断是否是 CORS 错误
+      if (e.detail && e.detail.toLowerCase && e.detail.toLowerCase().indexOf('cors') !== -1) {
+        mainMsg = t('pixel_ai_error_cors');
+      }
+      if (e.message && e.message.toLowerCase && e.message.toLowerCase().indexOf('cors') !== -1) {
+        mainMsg = t('pixel_ai_error_cors');
+      }
     }
-    if (e.message === 'AUTH_ERROR') {
-      return t('pixel_ai_error_auth');
+
+    lines.push(mainMsg);
+
+    // 状态码 / status code
+    if (e.status) {
+      lines.push(t('pixel_ai_error_status', { code: e.status }));
     }
-    if (e.message === 'RATE_LIMIT') {
-      return t('pixel_ai_error_rate');
+
+    // 详细错误信息 / detailed error info
+    if (e.detail && e.detail.length > 0 && e.detail.length < 500) {
+      lines.push(t('pixel_ai_error_detail', { detail: e.detail }));
+    } else if (e.detail && e.detail.length >= 500) {
+      lines.push(t('pixel_ai_error_detail', { detail: e.detail.substring(0, 500) + '...' }));
     }
-    if (e.message && e.message.indexOf('Failed to fetch') !== -1) {
-      return t('pixel_ai_error_network');
-    }
-    return t('pixel_ai_error_unknown');
+
+    return lines.join('\n');
+  }
+
+  function isNetworkError(e) {
+    if (!e || !e.message) return false;
+    var msg = e.message.toLowerCase();
+    return msg.indexOf('failed to fetch') !== -1
+      || msg.indexOf('networkerror') !== -1
+      || msg.indexOf('typeerror') !== -1
+      || msg.indexOf('load failed') !== -1
+      || msg.indexOf('cors') !== -1
+      || msg.indexOf('net::') !== -1;
   }
 
   function updateSendButtonState() {
