@@ -153,6 +153,9 @@ window.PixelAI = (function () {
     promptTokens: 0,
     completionTokens: 0,
     isLoading: false,
+    isStreaming: false,
+    streamingMessageEl: null,
+    streamingContent: '',
     showApiKey: false,
     dom: {}
   };
@@ -253,11 +256,8 @@ window.PixelAI = (function () {
     state.dom.sendBtn = document.getElementById('btn-ai-send');
     state.dom.clearBtn = document.getElementById('btn-ai-clear');
     state.dom.settingsBtn = document.getElementById('btn-ai-settings');
-    state.dom.tutorialBtn = document.getElementById('btn-ai-tutorial');
     state.dom.backBtn = document.getElementById('btn-back-home-ai');
     state.dom.settingsModal = document.getElementById('ai-settings-modal');
-    state.dom.tutorialModal = document.getElementById('ai-tutorial-modal');
-    state.dom.tutorialCloseBtn = document.getElementById('btn-ai-tutorial-close');
     state.dom.providerSelect = document.getElementById('ai-provider-select');
     state.dom.modelSelect = document.getElementById('ai-model-select');
     state.dom.apiKeyInput = document.getElementById('ai-api-key-input');
@@ -407,6 +407,54 @@ window.PixelAI = (function () {
     }
   }
 
+  function appendStreamingMessage(role) {
+    if (!state.dom.messages) return null;
+    var container = state.dom.messages;
+
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'ai-message ai-message-' + role;
+    msgDiv.id = 'ai-streaming-message';
+
+    var label = document.createElement('div');
+    label.className = 'ai-message-label';
+    label.textContent = role === 'user' ? t('pixel_ai_you') : t('pixel_ai_assistant');
+    msgDiv.appendChild(label);
+
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'ai-message-content';
+    contentDiv.textContent = '';
+    msgDiv.appendChild(contentDiv);
+
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+
+    state.streamingMessageEl = msgDiv;
+    state.streamingContent = '';
+
+    return msgDiv;
+  }
+
+  function updateStreamingMessage(content) {
+    if (!state.streamingMessageEl) return;
+    state.streamingContent = content;
+    var contentDiv = state.streamingMessageEl.querySelector('.ai-message-content');
+    if (contentDiv) {
+      contentDiv.textContent = content;
+    }
+    if (state.dom.messages) {
+      state.dom.messages.scrollTop = state.dom.messages.scrollHeight;
+    }
+  }
+
+  function finalizeStreamingMessage() {
+    if (state.streamingMessageEl) {
+      state.streamingMessageEl.id = '';
+      state.streamingMessageEl = null;
+    }
+    state.streamingContent = '';
+    state.isStreaming = false;
+  }
+
   // ============================================================
   // API 调用 / API Calls
   // ============================================================
@@ -433,7 +481,7 @@ window.PixelAI = (function () {
     }
   }
 
-  async function callApi(userMessage) {
+  async function callApi(userMessage, useStream) {
     var provider = getProvider(state.settings.provider);
     var apiType = provider.apiType;
     var baseUrl = getBaseUrl(state.settings.provider);
@@ -444,12 +492,22 @@ window.PixelAI = (function () {
       throw new Error('NO_API_KEY');
     }
 
-    if (apiType === API_TYPES.OPENAI) {
-      return callOpenAI(baseUrl, modelId, apiKey);
-    } else if (apiType === API_TYPES.ANTHROPIC) {
-      return callAnthropic(baseUrl, modelId, apiKey);
-    } else if (apiType === API_TYPES.GOOGLE) {
-      return callGoogle(baseUrl, modelId, apiKey);
+    if (useStream) {
+      if (apiType === API_TYPES.OPENAI) {
+        return callOpenAIStream(baseUrl, modelId, apiKey);
+      } else if (apiType === API_TYPES.ANTHROPIC) {
+        return callAnthropicStream(baseUrl, modelId, apiKey);
+      } else if (apiType === API_TYPES.GOOGLE) {
+        return callGoogleStream(baseUrl, modelId, apiKey);
+      }
+    } else {
+      if (apiType === API_TYPES.OPENAI) {
+        return callOpenAI(baseUrl, modelId, apiKey);
+      } else if (apiType === API_TYPES.ANTHROPIC) {
+        return callAnthropic(baseUrl, modelId, apiKey);
+      } else if (apiType === API_TYPES.GOOGLE) {
+        return callGoogle(baseUrl, modelId, apiKey);
+      }
     }
 
     throw new Error('UNKNOWN_API_TYPE');
@@ -585,6 +643,261 @@ window.PixelAI = (function () {
     return content;
   }
 
+  async function parseSSE(response, onDelta, onDone) {
+    if (!response.body) {
+      throw new Error('NO_RESPONSE_BODY');
+    }
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    var buffer = '';
+    var fullContent = '';
+    var usageData = null;
+
+    try {
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+
+        buffer += decoder.decode(result.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line) continue;
+          if (line.indexOf('data: ') !== 0) continue;
+
+          var dataStr = line.substring(6);
+          if (dataStr === '[DONE]') {
+            if (onDone) onDone(fullContent, usageData);
+            return { content: fullContent, usage: usageData };
+          }
+
+          try {
+            var data = JSON.parse(dataStr);
+            var delta = onDelta(data, fullContent);
+            if (delta && typeof delta === 'string') {
+              fullContent += delta;
+            }
+            if (data.usage) {
+              usageData = data.usage;
+            }
+          } catch (e) {
+            // 忽略解析失败的行
+          }
+        }
+      }
+
+      if (buffer) {
+        var line = buffer.trim();
+        if (line && line.indexOf('data: ') === 0) {
+          var dataStr = line.substring(6);
+          if (dataStr !== '[DONE]') {
+            try {
+              var data = JSON.parse(dataStr);
+              var delta = onDelta(data, fullContent);
+              if (delta && typeof delta === 'string') {
+                fullContent += delta;
+              }
+              if (data.usage) {
+                usageData = data.usage;
+              }
+            } catch (e) {
+              // 忽略解析失败的行
+            }
+          }
+        }
+      }
+
+      if (onDone) onDone(fullContent, usageData);
+      return { content: fullContent, usage: usageData };
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  async function callOpenAIStream(baseUrl, model, apiKey) {
+    var messages = buildOpenAIMessages();
+    var response = await safeFetch(baseUrl + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        stream: true,
+        stream_options: { include_usage: true }
+      })
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    var result = await parseSSE(response, function (data, currentContent) {
+      if (data.choices && data.choices[0] && data.choices[0].delta) {
+        var delta = data.choices[0].delta;
+        if (delta.content) {
+          updateStreamingMessage(currentContent + delta.content);
+          return delta.content;
+        }
+      }
+      return null;
+    });
+
+    if (result.usage) {
+      var usage = result.usage;
+      if (usage.prompt_tokens) state.promptTokens += usage.prompt_tokens;
+      if (usage.completion_tokens) state.completionTokens += usage.completion_tokens;
+      if (usage.total_tokens) {
+        state.totalTokens += usage.total_tokens;
+      } else if (usage.prompt_tokens && usage.completion_tokens) {
+        state.totalTokens += usage.prompt_tokens + usage.completion_tokens;
+      }
+    }
+
+    return result.content;
+  }
+
+  async function callAnthropicStream(baseUrl, model, apiKey) {
+    var messages = buildAnthropicMessages();
+    var response = await safeFetch(baseUrl + '/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 4096,
+        messages: messages,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    var fullContent = '';
+    var inputTokens = 0;
+    var outputTokens = 0;
+
+    if (!response.body) {
+      throw new Error('NO_RESPONSE_BODY');
+    }
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    var buffer = '';
+
+    try {
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+
+        buffer += decoder.decode(result.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line) continue;
+          if (line.indexOf('data: ') !== 0) continue;
+
+          var dataStr = line.substring(6);
+          try {
+            var data = JSON.parse(dataStr);
+
+            if (data.type === 'message_start' && data.message && data.message.usage) {
+              inputTokens = data.message.usage.input_tokens || 0;
+            }
+
+            if (data.type === 'content_block_delta' && data.delta && data.delta.text) {
+              fullContent += data.delta.text;
+              updateStreamingMessage(fullContent);
+            }
+
+            if (data.type === 'message_delta' && data.usage) {
+              outputTokens = data.usage.output_tokens || 0;
+            }
+          } catch (e) {
+            // 忽略解析失败的行
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (inputTokens) {
+      state.promptTokens += inputTokens;
+      state.totalTokens += inputTokens;
+    }
+    if (outputTokens) {
+      state.completionTokens += outputTokens;
+      state.totalTokens += outputTokens;
+    }
+
+    return fullContent;
+  }
+
+  async function callGoogleStream(baseUrl, model, apiKey) {
+    var contents = buildGoogleContents();
+    var url = baseUrl + '/models/' + model + ':streamGenerateContent?key=' + encodeURIComponent(apiKey) + '&alt=sse';
+    var response = await safeFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: contents
+      })
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    var result = await parseSSE(response, function (data, currentContent) {
+      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        var parts = data.candidates[0].content.parts || [];
+        var delta = '';
+        for (var i = 0; i < parts.length; i++) {
+          if (parts[i].text) {
+            delta += parts[i].text;
+          }
+        }
+        if (delta) {
+          updateStreamingMessage(currentContent + delta);
+          return delta;
+        }
+      }
+      return null;
+    });
+
+    if (result.usage) {
+      var usage = result.usage;
+      if (usage.promptTokenCount) {
+        state.promptTokens += usage.promptTokenCount;
+        state.totalTokens += usage.promptTokenCount;
+      }
+      if (usage.candidatesTokenCount) {
+        state.completionTokens += usage.candidatesTokenCount;
+        state.totalTokens += usage.candidatesTokenCount;
+      }
+      if (usage.totalTokenCount) {
+        state.totalTokens = state.promptTokens + state.completionTokens;
+      }
+    }
+
+    return result.content;
+  }
+
   function buildOpenAIMessages() {
     var result = [];
     for (var i = 0; i < state.messages.length; i++) {
@@ -687,20 +1000,56 @@ window.PixelAI = (function () {
     }
 
     state.isLoading = true;
+    state.isStreaming = true;
     updateSendButtonState();
 
     appendThinkingMessage();
 
     try {
-      var reply = await callApi(userContent);
-      removeThinkingMessage();
+      var reply;
+      var usedStream = true;
+
+      try {
+        removeThinkingMessage();
+        appendStreamingMessage('assistant');
+
+        reply = await callApi(userContent, true);
+
+        if (!reply || !reply.trim()) {
+          throw new Error('EMPTY_STREAM_RESPONSE');
+        }
+      } catch (streamErr) {
+        usedStream = false;
+        console.warn('[PixelAI] Stream failed, falling back to non-stream:', streamErr.message);
+
+        if (state.streamingMessageEl && state.streamingMessageEl.parentNode) {
+          state.streamingMessageEl.parentNode.removeChild(state.streamingMessageEl);
+        }
+        finalizeStreamingMessage();
+
+        appendThinkingMessage();
+
+        reply = await callApi(userContent, false);
+        removeThinkingMessage();
+      }
 
       state.messages.push({ role: 'assistant', content: reply });
-      appendMessage('assistant', reply);
+
+      if (usedStream) {
+        finalizeStreamingMessage();
+      } else {
+        appendMessage('assistant', reply);
+      }
 
       renderTokenStats();
     } catch (e) {
       removeThinkingMessage();
+
+      if (state.streamingMessageEl && state.streamingMessageEl.parentNode) {
+        state.streamingMessageEl.parentNode.removeChild(state.streamingMessageEl);
+      }
+      finalizeStreamingMessage();
+
       // 控制台输出便于调试（不输出 API Key）/ console log for debugging (no API key)
       console.warn('[PixelAI] Error:', e.message, e.status || '', e.detail || '');
       var errorText = buildErrorMessage(e);
@@ -708,6 +1057,7 @@ window.PixelAI = (function () {
     }
 
     state.isLoading = false;
+    state.isStreaming = false;
     updateSendButtonState();
   }
 
@@ -825,16 +1175,6 @@ window.PixelAI = (function () {
     state.dom.settingsModal.style.display = 'none';
   }
 
-  function openTutorial() {
-    if (!state.dom.tutorialModal) return;
-    state.dom.tutorialModal.style.display = 'flex';
-  }
-
-  function closeTutorial() {
-    if (!state.dom.tutorialModal) return;
-    state.dom.tutorialModal.style.display = 'none';
-  }
-
   function toggleApiKeyVisibility() {
     state.showApiKey = !state.showApiKey;
     if (state.dom.apiKeyInput) {
@@ -946,10 +1286,6 @@ window.PixelAI = (function () {
       state.dom.settingsBtn.addEventListener('click', openSettings);
     }
 
-    if (state.dom.tutorialBtn) {
-      state.dom.tutorialBtn.addEventListener('click', openTutorial);
-    }
-
     if (state.dom.providerSelect) {
       state.dom.providerSelect.addEventListener('change', onProviderChange);
     }
@@ -970,14 +1306,6 @@ window.PixelAI = (function () {
       state.dom.settingsModal.addEventListener('click', onModalBackdropClick);
     }
 
-    if (state.dom.tutorialModal) {
-      state.dom.tutorialModal.addEventListener('click', onModalBackdropClick);
-    }
-
-    if (state.dom.tutorialCloseBtn) {
-      state.dom.tutorialCloseBtn.addEventListener('click', closeTutorial);
-    }
-
     document.addEventListener('languagechange', onLanguageChange);
   }
 
@@ -996,9 +1324,6 @@ window.PixelAI = (function () {
   function onModalBackdropClick(e) {
     if (e.target === state.dom.settingsModal) {
       closeSettings();
-    }
-    if (e.target === state.dom.tutorialModal) {
-      closeTutorial();
     }
   }
 
@@ -1029,35 +1354,11 @@ window.PixelAI = (function () {
     loadSettings();
     bindEvents();
 
-    // 如果消息列表为空，显示欢迎消息 / show welcome message if empty
-    if (state.messages.length === 0) {
-      renderWelcomeMessage();
-    }
-
     renderTokenStats();
 
     if (state.dom.input) {
       state.dom.input.placeholder = t('pixel_ai_placeholder');
     }
-  }
-
-  function renderWelcomeMessage() {
-    if (!state.dom.messages) return;
-    var welcomeText = t('pixel_ai_welcome');
-    var msgEl = document.createElement('div');
-    msgEl.className = 'ai-message assistant';
-
-    var avatar = document.createElement('div');
-    avatar.className = 'ai-message-avatar';
-    avatar.textContent = t('pixel_ai_assistant');
-
-    var bubble = document.createElement('div');
-    bubble.className = 'ai-message-bubble';
-    bubble.textContent = welcomeText;
-
-    msgEl.appendChild(avatar);
-    msgEl.appendChild(bubble);
-    state.dom.messages.appendChild(msgEl);
   }
 
   // ============================================================
