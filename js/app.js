@@ -2476,7 +2476,8 @@
     'physics-page': true,
     'pixelizer-page': true,
     'clock-page': true,
-    'rpg-page': true
+    'rpg-page': true,
+    'pixel-ai-page': true
   };
 
   // 页面 ID → 入口按钮 ID 与 i18n 键映射 / page → entry button & i18n key map
@@ -2499,8 +2500,9 @@
     'nn-visualizer-page':   { btnId: 'btn-enter-nn-visualizer',     titleKey: 'card_nnvis_title',           descKey: 'card_nnvis_desc' },
     'physics-page':         { btnId: 'btn-enter-physics',           titleKey: 'card_physics_title',         descKey: 'card_physics_desc' },
     'pixelizer-page':       { btnId: 'btn-enter-pixelizer',         titleKey: 'card_pixelizer_title',       descKey: 'card_pixelizer_desc' },
-    'clock-page':           { btnId: 'btn-enter-clock',             titleKey: 'card_clock_title',           descKey: 'card_clock_desc' },
-    'rpg-page':             { btnId: 'btn-enter-rpg',               titleKey: 'card_rpg_title',             descKey: 'card_rpg_desc' }
+    'clock-page':           { btnId: 'btn-enter-clock',             titleKey: 'card_clock_title',            descKey: 'card_clock_desc' },
+    'rpg-page':             { btnId: 'btn-enter-rpg',               titleKey: 'card_rpg_title',              descKey: 'card_rpg_desc' },
+    'pixel-ai-page':        { btnId: 'btn-enter-pixel-ai',          titleKey: 'card_pixel_ai_title',         descKey: 'card_pixel_ai_desc' }
   };
 
   // 统一隐藏所有页面（清除 active 和 hidden 类的状态）
@@ -4596,7 +4598,9 @@
     }
 
     function openTutorial(pageId) {
-      const tutorialKey = 'tutorial_' + pageId.replace('-page', '');
+      // 规范化：去掉 -page 后缀，连字符转下划线，匹配 i18n 键命名约定
+      // Normalize: strip -page suffix, convert hyphens to underscores to match i18n key convention
+      const tutorialKey = 'tutorial_' + pageId.replace('-page', '').replace(/-/g, '_');
       let content = i18n.t(tutorialKey);
       if (!content || content === tutorialKey) {
         content = i18n.t('tutorial_fallback');

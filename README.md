@@ -905,6 +905,39 @@ cd wasm
 
 ## Changelog
 
+### 2026-07 · AI Chat Custom Confirm Dialog & Markdown Rendering (v39)
+
+- **Custom pixel-style confirm dialog** — replaced native `confirm()` with a centered modal featuring red border, gold pixel-grid background, warning icon, danger button; supports bilingual (zh/en) titles/messages, ESC/backdrop close, pop-in animation
+- **AI Markdown rendering** — `markdownToHtml()` converts `**bold**`, `*italic*`, `~~strikethrough~~`, `` `inline code` ``, ```` ```code blocks``` ````, `[links](url)`, `### headers`, `- lists`, `> quotes` to HTML; rendered in real-time during streaming
+- **Programmer-friendly fonts** — switched message content/code to `Consolas, Monaco, Source Code Pro, Menlo` font stack; removed green code color
+- **Pixel-grid backgrounds** — code blocks and blockquotes now have pixel checkerboard patterns via CSS `linear-gradient`
+- **Service Worker** cache version upgraded to v39
+
+### 2026-07 · AI Chat Tutorial & UX Refinement (v35)
+
+- **Tutorial button relocated** — moved to the right of the Back button in a new `.pixel-ai-topbar-left` group; overrode the global `.tutorial-btn` fixed-position style for the AI page so it sits inline
+- **Tutorial content fully expanded** — bilingual (zh/en) `tutorial_pixel_ai` rewritten with 13 sections: API Key acquisition for all 9 providers, model configuration, chatting, conversation sidebar, message editing, HTML rendering, custom scrollbar, creative features (copy/regenerate/export/prompt templates), token stats, mobile, common errors, privacy
+- **Tutorial content styling** — added `.tutorial-content h4 / strong / code / a` styles for richer formatting inside the modal
+- **Pixel AI in Recent Tools** — added `pixel-ai-page` to `RECENT_TRACKED_PAGES` and `PAGE_TO_INFO` so Pixel AI now appears on the homepage "RECENT" area
+- **Prompt templates i18n** — replaced hardcoded Chinese `data-prompt` with `data-prompt-key` lookup via `t()`; added 5 new `_text` i18n keys (zh + en)
+- **Tutorial key lookup fix** — normalized hyphens to underscores in `openTutorial()`; renamed 3 keys (`tutorial_mixed-arithmetic` → `tutorial_mixed_arithmetic`, `tutorial_nn-visualizer` → `tutorial_nn_visualizer`, `tutorial_pixel_draw` → `tutorial_pixel_drawing`) — fixes 6 pages that were silently falling back to generic tutorial
+- **Service Worker** cache version upgraded v34 → v35
+
+### 2026-07 · AI Chat Overhaul: History + Edit + New Features
+
+- **Left conversation sidebar** — multi-conversation management, stored in localStorage (`pixel_ai_conversations`), survives browser restart; red warning at bottom: "⚠ Clearing browser cache will erase all conversations!!!"
+- **Message editing** — user messages can be edited and resent (truncates following messages); AI responses can be edited directly
+- **AI HTML rendering** — bold/color/code blocks render properly; `<script>` tags auto-stripped by `sanitizeHtml()`
+- **Custom scrollbar** — gold pixel-style scrollbar, draggable, hides native scrollbar
+- **One-click copy** — copy button under AI responses
+- **Regenerate** — one-click regenerate if unsatisfied with AI response
+- **Export conversation** — one-click export current conversation as Markdown file
+- **Prompt templates** — quick chips above input (Translate / Summarize / Code / Explain / Write)
+- **Tutorial button placement** — confirmed left of clear button, no wrapping
+- **Service Worker** cache version upgraded to v34
+
+---
+
 ### 2026-07 · Pixel AI chat tool
 
 - **Pixel AI chat tool** — New AI chat tool with 9 LLM providers, token usage tracking, local API key storage, bilingual UI
@@ -1891,6 +1924,39 @@ cd wasm
 ---
 
 ## 更新日志
+
+### 2026-07 · AI 对话自制确认弹窗 + Markdown 渲染（v39）
+
+- **自制像素风确认弹窗** — 用居中弹窗替换原生 `confirm()`，红色边框 + 金色像素方格背景 + 警告图标 + 危险按钮；支持中英文标题/消息、ESC/点击遮罩关闭、弹出动画
+- **AI Markdown 渲染** — `markdownToHtml()` 将 `**加粗**`、`*斜体*`、`~~删除线~~`、`` `内联代码` ``、```` ```代码块``` ````、`[链接](url)`、`### 标题`、`- 列表`、`> 引用` 转换为 HTML；流式输出过程中实时渲染
+- **程序员友好字体** — 消息内容/代码改用 `Consolas, Monaco, Source Code Pro, Menlo` 字体栈；去掉绿色代码颜色
+- **像素方格背景** — 代码块和引用通过 CSS `linear-gradient` 添加像素棋盘格图案
+- **Service Worker** 缓存版本升级到 v39
+
+### 2026-07 · AI 对话教程与体验优化（v35）
+
+- **教程按钮位置调整** — 移至「返回」按钮右侧，新增 `.pixel-ai-topbar-left` 容器；覆盖全局 `.tutorial-btn` 的 fixed 定位样式，使其在 AI 页面正常内联显示
+- **教程内容全面完善** — 中英文 `tutorial_pixel_ai` 重写为 13 个章节：9 家服务商 API Key 获取、模型配置、开始对话、对话记录栏、消息编辑、HTML 渲染、自制滚动条、创新功能（复制/重新生成/导出/提示词模板）、Token 统计、移动端、常见错误、隐私说明
+- **教程弹窗样式增强** — 新增 `.tutorial-content h4 / strong / code / a` 样式，弹窗内格式更丰富
+- **像素 AI 加入最近使用** — 将 `pixel-ai-page` 添加到 `RECENT_TRACKED_PAGES` 和 `PAGE_TO_INFO`，首页"最近使用"区域现在会显示像素 AI
+- **提示词模板国际化** — 用 `data-prompt-key` 配合 `t()` 查找替换硬编码中文 `data-prompt`，新增 5 个 `_text` 中英文 i18n 键
+- **教程键查找修复** — 在 `openTutorial()` 中将连字符统一转为下划线；重命名 3 个键（`tutorial_mixed-arithmetic` → `tutorial_mixed_arithmetic`、`tutorial_nn-visualizer` → `tutorial_nn_visualizer`、`tutorial_pixel_draw` → `tutorial_pixel_drawing`）— 修复了 6 个页面之前默默回退到通用教程的问题
+- **Service Worker** 缓存版本升级 v34 → v35
+
+### 2026-07 · AI 对话大升级：对话记录 + 编辑 + 创新功能
+
+- **左侧对话记录栏** — 多对话管理，存 localStorage（`pixel_ai_conversations`）持久化，退出浏览器不丢失。底部红色警告："⚠ 清空浏览器缓存会导致对话记录消失！！！"
+- **消息可编辑** — 用户问题可修改后重新发送（自动截断后续消息），AI 回答可直接编辑内容
+- **AI 回答 HTML 渲染** — AI 输出的 HTML 格式文本（加粗、颜色、代码块等）正常显示，`<script>` 标签通过 `sanitizeHtml()` 自动过滤
+- **自制滚动条** — 金色像素风自制滚动条，可拖拽，隐藏原生滚动条
+- **一键复制** — AI 回答下方复制按钮，一键复制到剪贴板
+- **重新生成** — 不满意 AI 回答可一键重新生成
+- **导出对话** — 一键导出当前对话为 Markdown 文件下载
+- **提示词模板** — 输入框上方快捷按钮（翻译/总结/代码解释/概念解释/写作），点击即填入
+- **教程按钮位置** — 确认在清空对话按钮左边，不换行
+- **Service Worker** 缓存版本升级到 v34
+
+---
 
 ### 2026-07 · 像素 AI 聊天工具
 
