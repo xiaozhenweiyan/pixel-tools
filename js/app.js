@@ -2397,6 +2397,7 @@
     'clock-page',                         // 像素时钟
     'rpg-page',                           // 像素RPG
     'pixel-ai-page',                      // 像素AI
+    'eve-chat-page',                      // Eve聊天室彩蛋
     'settings-page'                      // 设置页
   ];
 
@@ -2518,6 +2519,10 @@
       if (HIDDEN_PAGES[id]) {
         el.classList.add('hidden');
       }
+      // eve-chat-page 初始有 hidden 类，隐藏时需要恢复
+      if (id === 'eve-chat-page') {
+        el.classList.add('hidden');
+      }
     }
   }
 
@@ -2543,6 +2548,7 @@
     if (!el) return;
     if (ACTIVE_PAGES[pageId]) {
       el.classList.add('active');
+      el.classList.remove('hidden');
     } else if (HIDDEN_PAGES[pageId]) {
       el.classList.remove('hidden');
     }
@@ -3409,9 +3415,6 @@
     if (btnBackHomeClock) btnBackHomeClock.addEventListener('click', showAppLanding);
     if (btnBackHomeRPG) btnBackHomeRPG.addEventListener('click', showAppLanding);
     if (btnBackHomeAI) btnBackHomeAI.addEventListener('click', showAppLanding);
-
-    // 初始化公仔彩蛋交互（点击公仔显示对话框，对话框点击进入 Eve 聊天室）
-    initMascotEasterEgg();
   }
 
   // ============================================================
@@ -4486,6 +4489,9 @@
     // 计算器与页面切换初始化 / calculator and page switching init
     initCalculator();
     initPageSwitching();
+
+    // 公仔彩蛋初始化 / Mascot Easter Egg init
+    initMascotEasterEgg();
 
     // 首页增强初始化 / home enhancements init
     initCategoryCollapse();
